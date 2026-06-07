@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>joyvend — portable memory</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font: 15px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #0e1116; color: #e6edf3; display: flex; min-height: 100vh; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 720px; padding: 32px 20px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: .3px; }
+  h1 .key { color: #f0b429; }
+  .sub { color: #8b949e; margin: 0 0 28px; font-size: 13px; }
+  .card { background: #161b22; border: 1px solid #232b36; border-radius: 12px; padding: 20px; margin-bottom: 18px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #8b949e; margin: 0 0 14px; }
+  input[type=password], input[type=text], textarea {
+    width: 100%; background: #0e1116; border: 1px solid #2d3744; color: #e6edf3;
+    border-radius: 8px; padding: 11px 12px; font: inherit; outline: none;
+  }
+  input:focus, textarea:focus { border-color: #f0b429; }
+  textarea { resize: vertical; min-height: 60px; }
+  button {
+    background: #f0b429; color: #1a1300; border: 0; border-radius: 8px; padding: 11px 16px;
+    font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:hover { background: #ffc940; }
+  button.ghost { background: #21262d; color: #e6edf3; }
+  button.ghost:hover { background: #2d333b; }
+  button:disabled { opacity: .55; cursor: default; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .row > input, .row > textarea { flex: 1; }
+  .err { color: #ff7b72; font-size: 13px; min-height: 18px; margin-top: 10px; }
+  .muted { color: #8b949e; font-size: 13px; }
+  pre.snippet {
+    white-space: pre-wrap; word-break: break-word; background: #0e1116; border: 1px solid #2d3744;
+    border-radius: 8px; padding: 14px; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 0;
+  }
+  .stat { display: flex; gap: 22px; flex-wrap: wrap; }
+  .stat div b { display: block; font-size: 20px; }
+  .stat div span { color: #8b949e; font-size: 12px; }
+  .hidden { display: none; }
+  .result { border-top: 1px solid #232b36; padding: 11px 0; }
+  .result:first-child { border-top: 0; }
+  .result .tags { color: #f0b429; font-size: 12px; }
+  .pill { font-size: 11px; color: #3fb950; border: 1px solid #2ea04326; background: #2ea04314; padding: 2px 8px; border-radius: 999px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #ffffff55; border-top-color: #1a1300; border-radius: 50%; animation: s .7s linear infinite; vertical-align: -2px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>joy<span class="key">vend</span></h1>
+      <p class="sub" id="subtitle">portable, encrypted memory for your AI agent</p>
+    </div>
+    <span class="pill" id="encpill">🔒 encrypted</span>
+  </div>
+
+  <!-- LOCK / SETUP -->
+  <div class="card" id="lockCard">
+    <h2 id="lockTitle">Unlock</h2>
+    <p class="muted" id="lockHint"></p>
+    <div style="margin:6px 0 0">
+      <input type="password" id="pw" placeholder="Decryption password" autofocus>
+      <input type="password" id="pw2" class="hidden" placeholder="Confirm password" style="margin-top:10px">
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="unlockBtn">Unlock</button>
+      <span class="muted" id="lockBusy"></span>
+    </div>
+    <div class="err" id="lockErr"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dash" class="hidden">
+    <div class="card">
+      <h2>Status</h2>
+      <div class="stat">
+        <div><b id="memCount">–</b><span>memories</span></div>
+        <div><b id="dbSize">–</b><span>on disk</span></div>
+        <div><b id="embedder" style="font-size:14px">–</b><span>embedder</span></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="ghost" id="lockNow">Lock</button>
+        <span class="muted" id="warn"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Connect your AI assistant</h2>
+      <p class="muted" style="margin:-6px 0 12px">Paste this into Claude Code, Cursor, or any agent with a shell/fetch tool.</p>
+      <pre class="snippet" id="snippet">…</pre>
+      <div class="row" style="margin-top:12px">
+        <button class="ghost" id="copyBtn">Copy snippet</button>
+        <button class="ghost" id="copyGuideBtn">Copy full instructions</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Remember something</h2>
+      <div class="row">
+        <textarea id="memText" placeholder="A fact to remember…"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="memTags" placeholder="tags (comma-separated, optional)">
+        <button id="rememberBtn">Remember</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Recall</h2>
+      <div class="row">
+        <input type="text" id="q" placeholder="Search your memories…">
+        <button id="searchBtn">Search</button>
+      </div>
+      <div id="results" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let firstLaunch = false;
+
+async function jget(u){ const r = await fetch(u); return {ok:r.ok, code:r.status, body: await r.json().catch(()=>({}))}; }
+async function jpost(u,b){ const r = await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}); return {ok:r.ok, code:r.status, body: await r.json().catch(()=>({}))}; }
+
+async function boot(){
+  const {body} = await jget('/api/state');
+  firstLaunch = body.first_launch;
+  if (body.unlocked) return showDash();
+  if (firstLaunch){
+    $('#lockTitle').textContent = 'Create your password';
+    $('#lockHint').innerHTML = '⚠ This password encrypts every memory on the stick. <b>There is NO recovery</b> — if you forget it, your memories are gone forever. You choose the strength.';
+    $('#pw').placeholder = 'New password';
+    $('#pw2').classList.remove('hidden');
+    $('#unlockBtn').textContent = 'Create & start';
+  } else {
+    $('#lockHint').textContent = 'Enter your password to decrypt your memories.';
+  }
+}
+
+$('#unlockBtn').onclick = doUnlock;
+$('#pw').addEventListener('keydown', e => { if(e.key==='Enter' && !firstLaunch) doUnlock(); });
+$('#pw2').addEventListener('keydown', e => { if(e.key==='Enter') doUnlock(); });
+
+async function doUnlock(){
+  const pw = $('#pw').value;
+  $('#lockErr').textContent = '';
+  if (firstLaunch && pw !== $('#pw2').value){ $('#lockErr').textContent = 'Passwords do not match.'; return; }
+  if (!pw){ $('#lockErr').textContent = 'Password required.'; return; }
+  $('#unlockBtn').disabled = true;
+  $('#lockBusy').innerHTML = '<span class="spin"></span> unlocking & loading model…';
+  const {ok, code, body} = await jpost(firstLaunch ? '/api/setup' : '/api/unlock', {password: pw});
+  $('#unlockBtn').disabled = false; $('#lockBusy').textContent = '';
+  if (ok) { $('#pw').value=''; $('#pw2').value=''; return showDash(); }
+  $('#lockErr').textContent = body.error || ('error '+code);
+}
+
+async function showDash(){
+  $('#lockCard').classList.add('hidden');
+  $('#dash').classList.remove('hidden');
+  $('#subtitle').textContent = 'unlocked — your memory is live';
+  await refresh();
+  const sn = await jget('/api/snippet'); $('#snippet').textContent = (sn.body.snippet||'').trim();
+}
+
+async function refresh(){
+  const {body:h} = await jget('/v1/health');
+  $('#memCount').textContent = h.memory_count ?? '–';
+  $('#dbSize').textContent = fmtBytes(h.db_size_bytes||0);
+  $('#embedder').textContent = (h.embedder||'').replace('local:','');
+  $('#warn').textContent = h.flush_error ? ('⚠ persistence error: '+h.flush_error) : '';
+}
+function fmtBytes(n){ if(n>1e6) return (n/1e6).toFixed(1)+' MB'; if(n>1e3) return (n/1e3|0)+' KB'; return n+' B'; }
+
+$('#copyBtn').onclick = () => { navigator.clipboard.writeText($('#snippet').textContent); $('#copyBtn').textContent='Copied ✓'; setTimeout(()=>$('#copyBtn').textContent='Copy snippet',1500); };
+$('#copyGuideBtn').onclick = async () => {
+  const r = await fetch('/v1/guide'); const text = await r.text();
+  navigator.clipboard.writeText(text); $('#copyGuideBtn').textContent='Copied ✓';
+  setTimeout(()=>$('#copyGuideBtn').textContent='Copy full instructions',1500);
+};
+$('#lockNow').onclick = async () => { await jpost('/api/lock'); location.reload(); };
+
+$('#rememberBtn').onclick = async () => {
+  const t = $('#memText').value.trim(); if(!t) return;
+  const tags = $('#memTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const item = {content:t}; if(tags.length) item.tags = tags;
+  await jpost('/v1/banks/default/retain', {items:[item]});
+  $('#memText').value=''; $('#memTags').value=''; refresh();
+};
+
+$('#searchBtn').onclick = doSearch;
+$('#q').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
+async function doSearch(){
+  const q = $('#q').value.trim(); if(!q) return;
+  const {body} = await jpost('/v1/banks/default/recall', {query:q});
+  const el = $('#results'); el.innerHTML = '';
+  (body.results||[]).forEach(r => {
+    const d = document.createElement('div'); d.className='result';
+    d.innerHTML = '<div>'+escapeHTML(r.text)+'</div>' + (r.tags? '<div class="tags">'+r.tags.map(escapeHTML).join(', ')+'</div>':'');
+    el.appendChild(d);
+  });
+  if(!(body.results||[]).length) el.innerHTML = '<div class="muted" style="padding:10px 0">No matches.</div>';
+}
+function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+boot();
+</script>
+</body>
+</html>

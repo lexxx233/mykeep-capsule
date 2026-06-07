@@ -1,0 +1,40 @@
+# --- Build output ---
+/bin/
+/dist/
+/joyvend
+/joyvend.exe
+*.exe
+
+# --- Go ---
+# Test binaries / coverage / profiles
+*.test
+*.out
+coverage.txt
+coverage.html
+# go workspace files (local-only)
+go.work
+go.work.sum
+# vendored deps (we use modules, not vendoring)
+/vendor/
+
+# --- joyvend runtime data (must never be committed) ---
+# The encrypted store, config, lockfile, and atomic-write temp files.
+*.db.enc
+*.db.enc.lock
+joyvend.config.json
+.joyvend-*.tmp
+# The knowledge base created beside a binary, or a data/ dir from JOYVEND_DATA_DIR.
+joyvend_kb/
+/data/
+# Downloaded / converted embedding models (~100+ MB; fetched at first launch).
+**/models/
+
+# --- Editors / IDEs ---
+.idea/
+.vscode/
+*.swp
+*~
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
