@@ -50,10 +50,16 @@ type Store struct {
 	conn         *sql.Conn
 	dirty        bool
 	writeCount   int
+	writeGen     uint64 // bumped per write; tags each snapshot (under s.mu)
 	flushTimer   *time.Timer
 	closed       bool
 	lastFlushErr error
 	lock         *fileLock
+
+	// flushMu single-flights the slow seal+disk-write (off s.mu) so a USB write
+	// never blocks reads/writes; persistedGen keeps the on-disk blob monotonic.
+	flushMu      sync.Mutex
+	persistedGen uint64
 
 	vecAvailable bool // vec0 KNN backend present (D1)
 	vecCreated   bool // vec_idx table built
@@ -175,6 +181,7 @@ func (s *Store) loadFromBlob() error {
 func (s *Store) markDirty() {
 	s.dirty = true
 	s.writeCount++
+	s.writeGen++
 	if s.flushTimer != nil {
 		s.flushTimer.Stop()
 	}
@@ -184,47 +191,81 @@ func (s *Store) markDirty() {
 	}
 }
 
-// flushAsync flushes and logs (does not swallow) any error; memories stay in RAM
+// flushAsync re-seals and logs (does not swallow) any error; memories stay in RAM
 // and the idle timer will retry (PLAN §11.6, D19).
 func (s *Store) flushAsync() {
-	if err := s.Flush(); err != nil {
+	if err := s.reseal(); err != nil {
 		log.Printf("joyvend: re-seal failed (memories held in RAM, will retry): %v", err)
 	}
 }
 
-// Flush synchronously re-seals the whole DB to the encrypted blob if dirty.
-func (s *Store) Flush() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.flushLocked()
-}
+// Flush synchronously re-seals the whole DB to the encrypted blob if dirty (blocks
+// until persisted). Used on shutdown.
+func (s *Store) Flush() error { return s.reseal() }
 
-func (s *Store) flushLocked() error {
+// reseal snapshots the in-RAM DB under s.mu (a fast memcpy), then encrypts and
+// writes the snapshot WITHOUT holding s.mu — so the slow USB write never blocks
+// reads/writes. flushMu single-flights the disk write, and a monotonic generation
+// guard (persistedGen) ensures a stale snapshot can never overwrite a newer blob.
+// On failure the store stays dirty and the idle timer retries; the error is
+// surfaced via /v1/health.
+func (s *Store) reseal() error {
+	s.mu.Lock()
 	if !s.dirty || s.closed {
+		s.mu.Unlock()
 		return nil
 	}
-	err := s.resealLocked()
-	s.lastFlushErr = err
-	if err == nil {
-		s.dirty = false
-		s.writeCount = 0
+	raw, err := s.serializeLocked()
+	if err != nil {
+		s.lastFlushErr = err
+		s.mu.Unlock()
+		return err
 	}
-	return err
+	gen := s.writeGen
+	s.dirty = false // optimistic: this snapshot covers writes up to `gen`
+	s.writeCount = 0
+	s.mu.Unlock()
+
+	// Slow part (AES seal + USB write + fsync) runs off s.mu; flushMu serializes it.
+	s.flushMu.Lock()
+	if gen <= s.persistedGen { // a newer snapshot already won — discard this one
+		s.flushMu.Unlock()
+		return nil
+	}
+	werr := s.writeSealed(raw)
+	if werr == nil {
+		s.persistedGen = gen
+	}
+	s.flushMu.Unlock()
+
+	s.mu.Lock()
+	s.lastFlushErr = werr
+	if werr != nil {
+		s.dirty = true // failed → stay dirty so the idle timer retries
+	}
+	s.mu.Unlock()
+	return werr
 }
 
-func (s *Store) resealLocked() error {
+// serializeLocked snapshots the whole in-RAM DB to a fresh byte slice. modernc's
+// Serialize returns a copy, so the result is safe to encrypt/write after s.mu is
+// released. Caller holds s.mu.
+func (s *Store) serializeLocked() ([]byte, error) {
 	var raw []byte
-	if err := s.conn.Raw(func(dc any) error {
+	err := s.conn.Raw(func(dc any) error {
 		ser, ok := dc.(serializer)
 		if !ok {
 			return errors.New("driver does not support Serialize")
 		}
-		b, err := ser.Serialize()
+		b, serr := ser.Serialize()
 		raw = b
-		return err
-	}); err != nil {
-		return err
-	}
+		return serr
+	})
+	return raw, err
+}
+
+// writeSealed encrypts raw with the DEK and atomically writes the encrypted blob.
+func (s *Store) writeSealed(raw []byte) error {
 	var sealed secret.Sealed
 	if err := s.keys.Use(func(dek []byte) error {
 		sl, err := secret.SealBlob(dek, raw)
@@ -267,18 +308,25 @@ func (s *Store) EventAts(ids []int64) map[int64]*int64 {
 // Close flushes and tears down the store.
 func (s *Store) Close() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if s.closed {
+		s.mu.Unlock()
 		return nil
 	}
 	if s.flushTimer != nil {
 		s.flushTimer.Stop()
 	}
-	err := s.flushLocked()
+	s.mu.Unlock()
+
+	// Final synchronous re-seal (blocks until persisted) so a clean shutdown is
+	// lossless; reseal's single-flight serializes it with any in-flight async flush.
+	err := s.reseal()
+
+	s.mu.Lock()
 	s.closed = true
 	_ = s.conn.Close()
 	_ = s.db.Close()
 	s.lock.release()
+	s.mu.Unlock()
 	return err
 }
 

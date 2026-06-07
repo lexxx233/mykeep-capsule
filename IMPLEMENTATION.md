@@ -10,7 +10,7 @@ enhancements and hardening, not gaps in the happy path.
 |---|---|
 | **M0 scaffolding** | `internal/paths` (USB-relative resolution + host fallback), `cmd/joyvend`, `Makefile`, GitHub CI, **no-CGo guard**, six-target cross-compile (~15–17 MB each) |
 | **M1 config / secret** | argon2id KEK → wrapped random DEK → AES-256-GCM; full-width KDF params bound as AEAD AAD (D7); `KeyStore` with zeroize; password-before-serving launch flow; no passphrase policy + NO-RECOVERY warning |
-| **M2 storage / encryption (D13/D19)** | whole-DB AES-256-GCM via SQLite `Serialize`/`Deserialize` (no plaintext on disk); **debounced re-seal** with retry + error surfacing; schema + FTS5 + triggers; **single-instance lock** (flock / LockFileEx) |
+| **M2 storage / encryption (D13/D19)** | whole-DB AES-256-GCM via SQLite `Serialize`/`Deserialize` (no plaintext on disk); **debounced, off-lock single-flight re-seal** — snapshots under `s.mu` then encrypts + writes the snapshot *without* holding the lock, so a slow USB write never blocks reads/writes; monotonic generation guard + retry + `/v1/health` surfacing; race-tested. Schema + FTS5 + triggers; **single-instance lock** (flock / LockFileEx) |
 | **M3 embeddings (D9/D17)** | local CPU `cybertron`/`bge-small-en-v1.5` (384-dim) + `HashEmbedder` fallback; dim pinning |
 | **M4 ingest** | chunk → local embed → store; timestamp parsing; soft-cap warning; agent-supplied entities |
 | **M5 retrieval** | keyword (FTS5/BM25) + semantic (vec0/cosine) + **temporal** arms; RRF (k=60); **recency rerank**; token budget |
