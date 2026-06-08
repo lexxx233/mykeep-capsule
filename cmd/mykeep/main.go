@@ -1,8 +1,8 @@
-// Command joyvend is a portable, USB-resident, encrypted memory store for AI agents.
+// Command mykeep is a portable, USB-resident, encrypted memory store for AI agents.
 //
 // Launching with no arguments (e.g. double-clicking the drive launcher) opens the
 // cross-platform GUI: a local web app in your browser that collects the password,
-// unlocks the encrypted DB, and shows a dashboard. `joyvend serve` is the terminal
+// unlocks the encrypted DB, and shows a dashboard. `mykeep serve` is the terminal
 // equivalent (prompts for the password on the TTY).
 package main
 
@@ -18,13 +18,13 @@ import (
 	"syscall"
 	"time"
 
-	"joyvend.io/internal/app"
-	"joyvend.io/internal/config"
-	"joyvend.io/internal/gui"
-	"joyvend.io/internal/paths"
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/server"
-	"joyvend.io/internal/setup"
+	"mykeep.ai/internal/app"
+	"mykeep.ai/internal/config"
+	"mykeep.ai/internal/gui"
+	"mykeep.ai/internal/paths"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/server"
+	"mykeep.ai/internal/setup"
 )
 
 var version = "0.1.0-dev"
@@ -62,13 +62,13 @@ func main() {
 		err = cmdBanks(args)
 	case "version":
 		sqliteVer, vec, _ := runtimeInfo()
-		fmt.Printf("joyvend %s\n  sqlite %s, vec0 %s\n", version, sqliteVer, yesno(vec, "available", "unavailable"))
+		fmt.Printf("mykeep %s\n  sqlite %s, vec0 %s\n", version, sqliteVer, yesno(vec, "available", "unavailable"))
 	default:
-		fmt.Fprintln(os.Stderr, "usage: joyvend <gui|serve|snippet|guide|doctor|capture|retain|recall|memories|banks|version>")
+		fmt.Fprintln(os.Stderr, "usage: mykeep <gui|serve|snippet|guide|doctor|capture|retain|recall|memories|banks|version>")
 		os.Exit(1)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "joyvend: "+err.Error())
+		fmt.Fprintln(os.Stderr, "mykeep: "+err.Error())
 		os.Exit(1)
 	}
 }
@@ -98,7 +98,7 @@ func cmdSnippet() error {
 	}
 	cfg, err := config.Load(layout.ConfigPath())
 	if err != nil {
-		return errors.New("not set up yet; run joyvend first")
+		return errors.New("not set up yet; run mykeep first")
 	}
 	fmt.Println(server.SnippetText(cfg.Server.Addr, ""))
 	return nil
@@ -147,7 +147,7 @@ func cmdServe() error {
 		}
 	}()
 
-	fmt.Printf("\n✅ joyvend running at http://%s  — copy the block below into your AI assistant:\n", rt.Config.Server.Addr)
+	fmt.Printf("\n✅ mykeep running at http://%s  — copy the block below into your AI assistant:\n", rt.Config.Server.Addr)
 	fmt.Println(srv.Snippet())
 
 	sig := make(chan os.Signal, 1)

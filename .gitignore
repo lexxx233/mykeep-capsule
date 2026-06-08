@@ -1,8 +1,8 @@
 # --- Build output ---
 /bin/
 /dist/
-/joyvend
-/joyvend.exe
+/mykeep
+/mykeep.exe
 *.exe
 
 # --- Go ---
@@ -17,14 +17,14 @@ go.work.sum
 # vendored deps (we use modules, not vendoring)
 /vendor/
 
-# --- joyvend runtime data (must never be committed) ---
+# --- mykeep runtime data (must never be committed) ---
 # The encrypted store, config, lockfile, and atomic-write temp files.
 *.db.enc
 *.db.enc.lock
-joyvend.config.json
-.joyvend-*.tmp
-# The knowledge base created beside a binary, or a data/ dir from JOYVEND_DATA_DIR.
-joyvend_kb/
+mykeep.config.json
+.mykeep-*.tmp
+# The knowledge base created beside a binary, or a data/ dir from MYKEEP_DATA_DIR.
+mykeep_kb/
 /data/
 # Downloaded / converted embedding models (~100+ MB; fetched at first launch).
 **/models/

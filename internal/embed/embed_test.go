@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/vector"
 )
 
 // HashEmbedder must satisfy the Embedder interface.
@@ -116,7 +116,7 @@ func TestHashEmbedder_Deterministic(t *testing.T) {
 
 	texts := []string{
 		"the quick brown fox jumps over the lazy dog",
-		"joyvend stores memories for ai agents",
+		"mykeep stores memories for ai agents",
 		"UPPER and lower MiXeD case 123",
 		"single",
 		"",
@@ -239,7 +239,7 @@ func TestHashEmbedder_SimilarityRanksSharedWordsHigher(t *testing.T) {
 		{
 			name:      "memory domain",
 			query:     "store memories for ai agents",
-			related:   "joyvend can store and recall memories for agents",
+			related:   "mykeep can store and recall memories for agents",
 			unrelated: "the weather in paris was sunny and warm",
 		},
 		{

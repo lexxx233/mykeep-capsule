@@ -7,8 +7,8 @@ import (
 	"sync"
 	"testing"
 
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/store"
 )
 
 // TestResealConcurrentPersistsAll hammers the store with concurrent writes while

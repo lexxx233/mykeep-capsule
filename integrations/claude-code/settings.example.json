@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/joyvend-capture.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/mykeep-capture.sh",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/joyvend-distill-check.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/mykeep-distill-check.sh",
             "timeout": 10
           }
         ]

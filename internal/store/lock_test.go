@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/store"
 )
 
 func TestSingleInstanceLock(t *testing.T) {
-	blob := filepath.Join(t.TempDir(), "joyvend.db.enc")
+	blob := filepath.Join(t.TempDir(), "mykeep.db.enc")
 	dek := make([]byte, 32)
 	if _, err := rand.Read(dek); err != nil {
 		t.Fatal(err)

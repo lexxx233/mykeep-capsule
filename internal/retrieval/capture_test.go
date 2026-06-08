@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/store"
 )
 
 func TestRecallExcludesCapturesByDefault(t *testing.T) {

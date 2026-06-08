@@ -1,4 +1,4 @@
-// Package app assembles the joyvend runtime (encrypted store + local embedder +
+// Package app assembles the mykeep runtime (encrypted store + local embedder +
 // ingest/recall pipelines) from a password, shared by the CLI `serve` flow and the
 // GUI. It centralizes first-launch config creation and unlock.
 package app
@@ -10,16 +10,16 @@ import (
 	"path/filepath"
 	"time"
 
-	"joyvend.io/internal/config"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/ingest"
-	"joyvend.io/internal/paths"
-	"joyvend.io/internal/retrieval"
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/config"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/ingest"
+	"mykeep.ai/internal/paths"
+	"mykeep.ai/internal/retrieval"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/store"
 )
 
-// Runtime is the assembled, unlocked joyvend core.
+// Runtime is the assembled, unlocked mykeep core.
 type Runtime struct {
 	Config   *config.Config
 	Store    *store.Store

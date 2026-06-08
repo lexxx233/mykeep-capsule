@@ -1,4 +1,4 @@
-// Package config loads and saves joyvend.config.json beside the binary. Only the
+// Package config loads and saves mykeep.config.json beside the binary. Only the
 // secret envelope's ciphertext is sensitive; everything else is plaintext (PLAN §11.2).
 package config
 
@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"joyvend.io/internal/secret"
+	"mykeep.ai/internal/secret"
 )
 
 type Config struct {
@@ -67,7 +67,7 @@ func Save(path string, c *Config) error {
 		return err
 	}
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".joyvend-cfg-*.tmp")
+	tmp, err := os.CreateTemp(dir, ".mykeep-cfg-*.tmp")
 	if err != nil {
 		return err
 	}

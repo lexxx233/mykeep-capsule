@@ -1,7 +1,7 @@
-// Package store is joyvend's encrypted-at-rest SQLite memory store (PLAN §5, §11.6).
+// Package store is mykeep's encrypted-at-rest SQLite memory store (PLAN §5, §11.6).
 //
 // The live DB is an in-RAM SQLite database (modernc, pure-Go). At unlock the whole
-// DB is decrypted from joyvend.db.enc and Deserialize'd into RAM; writes hit RAM and
+// DB is decrypted from mykeep.db.enc and Deserialize'd into RAM; writes hit RAM and
 // a debounced flush re-seals the whole blob (D19). No plaintext DB touches the stick.
 package store
 
@@ -18,7 +18,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"joyvend.io/internal/secret"
+	"mykeep.ai/internal/secret"
 )
 
 // serializer is implemented by modernc's *conn (exported methods on an unexported
@@ -195,7 +195,7 @@ func (s *Store) markDirty() {
 // and the idle timer will retry (PLAN §11.6, D19).
 func (s *Store) flushAsync() {
 	if err := s.reseal(); err != nil {
-		log.Printf("joyvend: re-seal failed (memories held in RAM, will retry): %v", err)
+		log.Printf("mykeep: re-seal failed (memories held in RAM, will retry): %v", err)
 	}
 }
 
@@ -333,7 +333,7 @@ func (s *Store) Close() error {
 // atomicWrite writes via temp file + fsync + rename so a crash never corrupts the blob.
 func atomicWrite(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".joyvend-*.tmp")
+	tmp, err := os.CreateTemp(dir, ".mykeep-*.tmp")
 	if err != nil {
 		return err
 	}

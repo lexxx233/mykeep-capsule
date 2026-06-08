@@ -1,5 +1,5 @@
 // Package embed provides local, CPU-only, pure-Go text embeddings (PLAN §9).
-// joyvend runs no LLM; the only model it runs is the embedder, and it's local.
+// mykeep runs no LLM; the only model it runs is the embedder, and it's local.
 package embed
 
 import (
@@ -7,7 +7,7 @@ import (
 	"hash/fnv"
 	"strings"
 
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/vector"
 )
 
 // Embedder turns text into fixed-dimension unit vectors.

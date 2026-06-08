@@ -14,14 +14,14 @@ import (
 	"golang.org/x/term"
 )
 
-// ErrNoPassphrase means no TTY and no JOYVEND_PASSPHRASE/stdin was available.
-var ErrNoPassphrase = errors.New("joyvend: no passphrase provided (set JOYVEND_PASSPHRASE or run on a terminal)")
+// ErrNoPassphrase means no TTY and no MYKEEP_PASSPHRASE/stdin was available.
+var ErrNoPassphrase = errors.New("mykeep: no passphrase provided (set MYKEEP_PASSPHRASE or run on a terminal)")
 
-// ReadPassphrase prompts once for the decryption password. Order: JOYVEND_PASSPHRASE
+// ReadPassphrase prompts once for the decryption password. Order: MYKEEP_PASSPHRASE
 // env (then unset), piped stdin, interactive TTY. Refuses (ErrNoPassphrase) if none.
 func ReadPassphrase(prompt string) ([]byte, error) {
-	if env := os.Getenv("JOYVEND_PASSPHRASE"); env != "" {
-		os.Unsetenv("JOYVEND_PASSPHRASE")
+	if env := os.Getenv("MYKEEP_PASSPHRASE"); env != "" {
+		os.Unsetenv("MYKEEP_PASSPHRASE")
 		return []byte(env), nil
 	}
 	if term.IsTerminal(int(os.Stdin.Fd())) {

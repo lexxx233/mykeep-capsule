@@ -1,4 +1,4 @@
-// Package paths resolves joyvend's data directory from the binary's own location
+// Package paths resolves mykeep's data directory from the binary's own location
 // on the USB drive, never from $HOME or the working directory. This is the
 // portability keystone (PLAN §3, §11.7).
 package paths
@@ -10,27 +10,27 @@ import (
 	"strings"
 )
 
-// Layout holds the resolved, absolute paths for a joyvend instance.
+// Layout holds the resolved, absolute paths for a mykeep instance.
 type Layout struct {
-	DataDir  string // .../joyvend_kb
+	DataDir  string // .../mykeep_kb
 	Portable bool   // false if we fell back to a host-local dir
 }
 
 const (
-	configName  = "joyvend.config.json"
-	dbName      = "joyvend.db.enc"
-	dataDirName = "joyvend_kb" // the knowledge base, a sibling of the binary on the stick
+	configName  = "mykeep.config.json"
+	dbName      = "mykeep.db.enc"
+	dataDirName = "mykeep_kb" // the knowledge base, a sibling of the binary on the stick
 )
 
 // Resolve determines the data directory from the running binary's location.
 // Resolution order (PLAN §11.7):
-//  1. JOYVEND_DATA_DIR env override (dev/tests).
-//  2. A joyvend_kb/ directory beside the binary (the drive root). All six platform
-//     binaries live at the drive root, so they share one joyvend_kb/.
-//  3. Fallback to os.UserConfigDir()/joyvend with Portable=false when the binary
+//  1. MYKEEP_DATA_DIR env override (dev/tests).
+//  2. A mykeep_kb/ directory beside the binary (the drive root). All six platform
+//     binaries live at the drive root, so they share one mykeep_kb/.
+//  3. Fallback to os.UserConfigDir()/mykeep with Portable=false when the binary
 //     dir is unusable (read-only mount, go-run temp exe, AppTranslocation).
 func Resolve() (Layout, error) {
-	if dir := os.Getenv("JOYVEND_DATA_DIR"); dir != "" {
+	if dir := os.Getenv("MYKEEP_DATA_DIR"); dir != "" {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return Layout{}, err
 		}
@@ -50,15 +50,15 @@ func Resolve() (Layout, error) {
 	if err != nil {
 		return Layout{}, err
 	}
-	dataDir := filepath.Join(cfg, "joyvend", dataDirName)
+	dataDir := filepath.Join(cfg, "mykeep", dataDirName)
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return Layout{}, err
 	}
 	return Layout{DataDir: dataDir, Portable: false}, nil
 }
 
-// binaryDir returns the directory the joyvend binary lives in (the drive root),
-// where joyvend_kb/ sits beside it. Returns ok=false for go-run temp binaries or
+// binaryDir returns the directory the mykeep binary lives in (the drive root),
+// where mykeep_kb/ sits beside it. Returns ok=false for go-run temp binaries or
 // macOS AppTranslocation, which are not on the stick.
 func binaryDir() (string, bool) {
 	exe, err := os.Executable()
@@ -71,7 +71,7 @@ func binaryDir() (string, bool) {
 	dir := filepath.Dir(exe)
 
 	// go-run / temp executables are not on the stick.
-	if strings.HasPrefix(exe, os.TempDir()) || os.Getenv("JOYVEND_DEV") != "" {
+	if strings.HasPrefix(exe, os.TempDir()) || os.Getenv("MYKEEP_DEV") != "" {
 		return "", false
 	}
 	// macOS Gatekeeper AppTranslocation: the binary is copied to a random RO path.
@@ -87,7 +87,7 @@ func writable(dir string) bool {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return false
 	}
-	probe := filepath.Join(dir, ".joyvend-write-probe")
+	probe := filepath.Join(dir, ".mykeep-write-probe")
 	f, err := os.OpenFile(probe, os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return false

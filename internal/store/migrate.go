@@ -68,7 +68,7 @@ func (s *Store) migrate(binaryVersion string) (int, error) {
 		return 0, err
 	}
 	if cur > maxV {
-		return 0, fmt.Errorf("this drive's data was written by a newer joyvend (schema v%d > supported v%d) — upgrade joyvend to open it", cur, maxV)
+		return 0, fmt.Errorf("this drive's data was written by a newer mykeep (schema v%d > supported v%d) — upgrade mykeep to open it", cur, maxV)
 	}
 
 	applied := 0

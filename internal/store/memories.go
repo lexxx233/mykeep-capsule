@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/vector"
 )
 
-var errClosed = errors.New("joyvend: store closed")
+var errClosed = errors.New("mykeep: store closed")
 
 // MemoryInput is one unit to persist (the ingest layer computes the embedding).
 type MemoryInput struct {

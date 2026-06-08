@@ -1,4 +1,4 @@
-// Package server is joyvend's local REST API (PLAN §7, §0.0). It is the only
+// Package server is mykeep's local REST API (PLAN §7, §0.0). It is the only
 // interface: an AI agent calls it with its shell/fetch tool. No MCP, no setup/unlock
 // routes (the server only runs already-unlocked).
 package server
@@ -12,11 +12,11 @@ import (
 	"strconv"
 	"strings"
 
-	"joyvend.io/internal/config"
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/ingest"
-	"joyvend.io/internal/retrieval"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/config"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/ingest"
+	"mykeep.ai/internal/retrieval"
+	"mykeep.ai/internal/store"
 )
 
 var bankIDRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
@@ -315,12 +315,12 @@ func isLoopbackHost(host string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-// GuideText is the full operating manual for the host LLM. Because joyvend runs no
+// GuideText is the full operating manual for the host LLM. Because mykeep runs no
 // model of its own, the calling agent must know the retain/recall/reflect/supersede
-// protocol — this is joyvend's equivalent of hindsight's reflect-agent system prompt.
+// protocol — this is mykeep's equivalent of hindsight's reflect-agent system prompt.
 func GuideText(addr string) string {
 	base := "http://" + addr
-	return strings.ReplaceAll(`joyvend — your persistent memory. You do the thinking; joyvend stores, searches, and forgets.
+	return strings.ReplaceAll(`mykeep — your persistent memory. You do the thinking; mykeep stores, searches, and forgets.
 Base URL: {BASE}   (local loopback, JSON). Default bank: "default".
 
 CORE LOOP — how you get smarter over time:
@@ -335,7 +335,7 @@ REMEMBER — POST {BASE}/v1/banks/default/retain
      "tags":      ["user_a"],             // scope (per user/project); recall/reflect can filter
      "entities":  [{"text":"Alice"}],     // link memories that share a person/thing
      "timestamp": "2026-05-01T10:00:00Z", // when it happened (ISO8601); omit = now
-     "supersedes":["42"]                  // ids this replaces — joyvend deletes them
+     "supersedes":["42"]                  // ids this replaces — mykeep deletes them
   }]}
   - Store the moment you learn something durable (names, preferences, decisions, state).
   - Keep each memory atomic. Don't store transient chit-chat.
@@ -365,7 +365,7 @@ CAPTURE & DISTILL (auto-retain safety net):
   - To search the raw log directly, pass {"include_captures": true} to recall.
 
 FORGETTING:
-  - joyvend deletes whatever you supersede and prunes orphaned data automatically.
+  - mykeep deletes whatever you supersede and prunes orphaned data automatically.
   - It does NOT auto-summarize or dedup for you — that is your job; you are the reasoner.
 
 NOTES:
@@ -385,7 +385,7 @@ func SnippetText(addr, token string) string {
 	}
 	return strings.Join([]string{
 		"─────────────────────────────────────────────────────────────────",
-		"You have a persistent local memory (joyvend) at " + base + ".",
+		"You have a persistent local memory (mykeep) at " + base + ".",
 		"▶ First, fetch your instructions:  GET " + base + "/v1/guide",
 		"Then follow them — remember facts about the user/project as you learn them, and",
 		"recall before you answer. Use your shell or fetch tool to call the API." + auth,

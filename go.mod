@@ -1,4 +1,4 @@
-module joyvend.io
+module mykeep.ai
 
 go 1.26.4
 

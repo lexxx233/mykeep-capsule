@@ -4,30 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**v1 implemented; public repo, MIT-licensed** ([github.com/lexxx233/JoyVend-memory-capsule](https://github.com/lexxx233/JoyVend-memory-capsule)). The full design lives in `PLAN.md` (the source of truth for decisions D1–D20); done-vs-deferred status in `IMPLEMENTATION.md`. A working Go implementation is in place: encrypted store, local CPU embeddings, keyword + semantic + temporal recall, agent-driven reflect over a knowledge hierarchy, supersession + orphan pruning, and a REST API + cross-platform GUI. Runs end-to-end (first-launch setup → retain → recall/reflect → encrypted persistence across restarts).
+**v1 implemented; public repo, MIT-licensed** ([github.com/lexxx233/mykeep-memory-capsule](https://github.com/lexxx233/mykeep-memory-capsule)). The full design lives in `PLAN.md` (the source of truth for decisions D1–D20); done-vs-deferred status in `IMPLEMENTATION.md`. A working Go implementation is in place: encrypted store, local CPU embeddings, keyword + semantic + temporal recall, agent-driven reflect over a knowledge hierarchy, supersession + orphan pruning, and a REST API + cross-platform GUI. Runs end-to-end (first-launch setup → retain → recall/reflect → encrypted persistence across restarts).
 
 **Build / test / run** (Go 1.26+, pure Go, no CGo):
 
 ```sh
-go build ./cmd/joyvend          # or: make build  ->  bin/joyvend
+go build ./cmd/mykeep          # or: make build  ->  bin/mykeep
 go test ./...                   # or: make test
 make guard                      # prove zero CGo in the dependency graph
 make cross                      # cross-compile all six win/mac/linux × amd64/arm64 targets
-./bin/joyvend serve             # first launch creates a password, then serves
+./bin/mykeep serve             # first launch creates a password, then serves
 go test ./internal/retrieval -run TestRRF -v   # a single test
 ```
 
 > Note: this dev environment has Go at `$HOME/go-sdk/go` and uses `GOPATH=$HOME/go-work`; `/tmp/goenv` sets the needed env. `go test -race` needs `CGO_ENABLED=1`.
 
-**Architecture (as built):** `cmd/joyvend` (CLI: gui[default]/serve/snippet/guide/doctor/capture/retain/recall/memories/banks/version) → `internal/gui` (cross-platform GUI: embedded local web app opened in the browser, pure-Go via os/exec) → `internal/app` (assembles the runtime from a password; shared by GUI + `serve`) → `internal/{paths,config,secret,setup}` (launch + password + KEK/DEK) → `internal/store` (in-RAM SQLite, whole-DB AES-256-GCM encryption via serialize/deserialize, debounced off-lock re-seal, FTS5 + vec0 KNN (brute-force fallback), single-instance lock) → `internal/{embed,vector}` (cybertron local CPU embeddings + hash fallback) → `internal/{ingest,retrieval}` (retain/recall + RRF + recency rerank) → `internal/server` (loopback REST API + copy-paste snippet). `internal/domain` holds the shared JSON types. The GUI starts locked and unlocks via a web password form (`/api/setup`, `/api/unlock`); `serve` unlocks via the TTY.
+**Architecture (as built):** `cmd/mykeep` (CLI: gui[default]/serve/snippet/guide/doctor/capture/retain/recall/memories/banks/version) → `internal/gui` (cross-platform GUI: embedded local web app opened in the browser, pure-Go via os/exec) → `internal/app` (assembles the runtime from a password; shared by GUI + `serve`) → `internal/{paths,config,secret,setup}` (launch + password + KEK/DEK) → `internal/store` (in-RAM SQLite, whole-DB AES-256-GCM encryption via serialize/deserialize, debounced off-lock re-seal, FTS5 + vec0 KNN (brute-force fallback), single-instance lock) → `internal/{embed,vector}` (cybertron local CPU embeddings + hash fallback) → `internal/{ingest,retrieval}` (retain/recall + RRF + recency rerank) → `internal/server` (loopback REST API + copy-paste snippet). `internal/domain` holds the shared JSON types. The GUI starts locked and unlocks via a web password form (`/api/setup`, `/api/unlock`); `serve` unlocks via the TTY.
 
 **CLI:** `gui` (default) / `serve` / `snippet` / `guide` / `doctor` / `capture` / `retain` / `recall` / `memories` / `banks` / `version`. The thin-client ops are HTTP clients of a running server; `doctor` is password-free diagnostics; `guide` prints the full agent operating manual (also `GET /v1/guide`).
 
-**Auto-retain (capture + distill):** fixes silent under-retention with no LLM in joyvend. `POST /…/capture` (+ `joyvend capture`) logs each raw turn as a low-tier `experience` tagged `capture` with mechanical cosine dedup; captures are excluded from recall/reflect by default (`include_captures` / `?type=&tag=` opt-in). A host hook (`integrations/claude-code/`) makes the trigger automatic; the agent distills captures into `mental_model`s via the existing `retain{supersedes}`. Judgment stays the agent's.
+**Auto-retain (capture + distill):** fixes silent under-retention with no LLM in mykeep. `POST /…/capture` (+ `mykeep capture`) logs each raw turn as a low-tier `experience` tagged `capture` with mechanical cosine dedup; captures are excluded from recall/reflect by default (`include_captures` / `?type=&tag=` opt-in). A host hook (`integrations/claude-code/`) makes the trigger automatic; the agent distills captures into `mental_model`s via the existing `retain{supersedes}`. Judgment stays the agent's.
 
-**Forgetting:** the agent supersedes stale syntheses via `retain {supersedes:[ids]}` (joyvend deletes them); orphan entities auto-pruned on delete (`store.PruneOrphans`). LLM-adjudicated dedup/consolidation stays the agent's job. The host LLM needs the operating manual (`GuideText`) since joyvend does no reasoning.
+**Forgetting:** the agent supersedes stale syntheses via `retain {supersedes:[ids]}` (mykeep deletes them); orphan entities auto-pruned on delete (`store.PruneOrphans`). LLM-adjudicated dedup/consolidation stays the agent's job. The host LLM needs the operating manual (`GuideText`) since mykeep does no reasoning.
 
-**Implemented:** whole-DB encryption (D13) + debounced re-seal (D19, off-lock single-flight: snapshot under lock, encrypt+write off it so a slow USB write never blocks recall); local CPU embeddings (bge-small) + hash fallback; **vec0 KNN default** (modernc/sqlite/vec) with brute-force fallback for tag-filtered queries and include_captures (D1); keyword + semantic + **temporal** recall arms fused with RRF + recency rerank; **reflect** + knowledge hierarchy (memory `type`: world/experience/observation/mental_model; reflect does broad retrieval + entity expansion and prioritizes the agent's stored syntheses mental_model>observation>raw — mirrors hindsight's reflect hierarchy; joyvend gathers, the agent reasons + retains conclusions as mental_models); **migration framework** (versioned, fail-closed, `edge`/graph-ready schema); single-instance lock; cross-platform **GUI** + REST API; doctor + thin-client CLI. **No passphrase complexity policy** (user owns strength; NO-RECOVERY warning). ~123 tests, all 6 targets cross-compile CGO_ENABLED=0.
+**Implemented:** whole-DB encryption (D13) + debounced re-seal (D19, off-lock single-flight: snapshot under lock, encrypt+write off it so a slow USB write never blocks recall); local CPU embeddings (bge-small) + hash fallback; **vec0 KNN default** (modernc/sqlite/vec) with brute-force fallback for tag-filtered queries and include_captures (D1); keyword + semantic + **temporal** recall arms fused with RRF + recency rerank; **reflect** + knowledge hierarchy (memory `type`: world/experience/observation/mental_model; reflect does broad retrieval + entity expansion and prioritizes the agent's stored syntheses mental_model>observation>raw — mirrors hindsight's reflect hierarchy; mykeep gathers, the agent reasons + retains conclusions as mental_models); **migration framework** (versioned, fail-closed, `edge`/graph-ready schema); single-instance lock; cross-platform **GUI** + REST API; doctor + thin-client CLI. **No passphrase complexity policy** (user owns strength; NO-RECOVERY warning). ~123 tests, all 6 targets cross-compile CGO_ENABLED=0.
 
 **Still deferred** (see IMPLEMENTATION.md): `PATCH /v1/settings` (D16), key-in-RAM hardening (mlock, argon2 calibration, entropy policy, idle auto-lock), DEK rotation. Update this file as those land.
 
@@ -63,8 +63,8 @@ Key concepts we are **not** borrowing:
   - **FTS5** for BM25 keyword retrieval.
   - **`sqlite-vec`** extension for ANN vector retrieval.
   All four hindsight-style retrieval strategies (semantic, keyword, temporal, graph) can be served from this one engine without a second process.
-- **Persistence root**: a `joyvend_kb/` directory *beside the executable on the USB drive*, not `$HOME` or any host-local path. This is what makes the system portable. Resolve paths relative to the binary's location, not the working directory.
-- **Drive layout** (`make dist`): the six platform binaries (`joyvend-<os>-<arch>[.exe]`) and three launchers sit flat at the drive root; all data lives in `joyvend_kb/` beside them (created on first launch). No `bin/<os>-<arch>/` nesting — each binary resolves `joyvend_kb/` as its own sibling.
+- **Persistence root**: a `mykeep_kb/` directory *beside the executable on the USB drive*, not `$HOME` or any host-local path. This is what makes the system portable. Resolve paths relative to the binary's location, not the working directory.
+- **Drive layout** (`make dist`): the six platform binaries (`mykeep-<os>-<arch>[.exe]`) and three launchers sit flat at the drive root; all data lives in `mykeep_kb/` beside them (created on first launch). No `bin/<os>-<arch>/` nesting — each binary resolves `mykeep_kb/` as its own sibling.
 
 ## First-launch setup flow
 

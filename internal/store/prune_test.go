@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"joyvend.io/internal/domain"
+	"mykeep.ai/internal/domain"
 )
 
 func TestPruneOrphansOnDelete(t *testing.T) {

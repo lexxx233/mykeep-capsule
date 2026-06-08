@@ -1,6 +1,6 @@
 The fonts in this directory are licensed under the SIL Open Font License, v1.1.
 They are subsetted (latin + latin-ext, woff2) builds of the upstream families,
-bundled so joyvend's GUI renders identically with no network access.
+bundled so mykeep's GUI renders identically with no network access.
 
   cinzel-500.woff2, cinzel-600.woff2
     Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)

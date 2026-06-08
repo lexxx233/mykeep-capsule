@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/store"
 )
 
 func ymd(y int, m time.Month, d int) int64 {

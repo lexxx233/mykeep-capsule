@@ -12,11 +12,11 @@ import (
 	"strconv"
 	"testing"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/store"
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/store"
+	"mykeep.ai/internal/vector"
 )
 
 const rrfEps = 1e-9
@@ -213,7 +213,7 @@ func newStore(t *testing.T) *store.Store {
 	if _, err := rand.Read(dek); err != nil {
 		t.Fatalf("rand dek: %v", err)
 	}
-	blob := filepath.Join(t.TempDir(), "joyvend.db.enc")
+	blob := filepath.Join(t.TempDir(), "mykeep.db.enc")
 	s, err := store.OpenEncrypted(blob, secret.NewKeyStore(dek), store.Options{})
 	if err != nil {
 		t.Fatalf("OpenEncrypted: %v", err)

@@ -1,4 +1,4 @@
-// Package domain holds the shared types that form joyvend's JSON/HTTP contract.
+// Package domain holds the shared types that form mykeep's JSON/HTTP contract.
 package domain
 
 // ---- Retain ----
@@ -14,7 +14,7 @@ type MemoryItem struct {
 	Context    *string           `json:"context,omitempty"`
 	Metadata   map[string]string `json:"metadata,omitempty"`
 	DocumentID *string           `json:"document_id,omitempty"`
-	Entities   []EntityInput     `json:"entities,omitempty"` // agent-supplied (joyvend has no LLM)
+	Entities   []EntityInput     `json:"entities,omitempty"` // agent-supplied (mykeep has no LLM)
 	Tags       []string          `json:"tags,omitempty"`
 	Supersedes []string          `json:"supersedes,omitempty"` // memory ids this item replaces (deleted after insert)
 }
@@ -75,7 +75,7 @@ type RecallResponse struct {
 
 // ReflectResponse is a broad, synthesis-oriented context bundle: more memories than
 // recall, entity-expanded, with the distinct entities surfaced so the calling agent
-// can organize and reason over them. joyvend gathers; the agent synthesizes (and may
+// can organize and reason over them. mykeep gathers; the agent synthesizes (and may
 // retain its conclusions). PLAN §0.0.
 type ReflectResponse struct {
 	Results  []RecallResult `json:"results"`

@@ -1,5 +1,5 @@
-// Package ingest is joyvend's retain pipeline: chunk -> local embed -> store
-// (PLAN §1.3, M4). joyvend runs no LLM, so there is no extraction step; the agent
+// Package ingest is mykeep's retain pipeline: chunk -> local embed -> store
+// (PLAN §1.3, M4). mykeep runs no LLM, so there is no extraction step; the agent
 // may pass structured entities in MemoryItem.Entities.
 package ingest
 
@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/store"
 )
 
 const maxChunkChars = 3000
@@ -102,7 +102,7 @@ func (in *Ingestor) Retain(ctx context.Context, bankID string, req domain.Retain
 }
 
 // validFactTypes are the knowledge-hierarchy tiers (PLAN: borrowed from hindsight's
-// raw-facts -> observations -> mental-models). The agent supplies them; joyvend stores
+// raw-facts -> observations -> mental-models). The agent supplies them; mykeep stores
 // them and reflect prioritizes the syntheses.
 var validFactTypes = map[string]bool{
 	"world": true, "experience": true, "observation": true, "mental_model": true,

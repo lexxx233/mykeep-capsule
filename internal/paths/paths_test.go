@@ -29,13 +29,13 @@ func unsetEnv(t *testing.T, key string) {
 }
 
 // TestResolveHonorsDataDirEnv verifies the highest-priority resolution branch:
-// JOYVEND_DATA_DIR is used verbatim, the directory is created, and the layout is
+// MYKEEP_DATA_DIR is used verbatim, the directory is created, and the layout is
 // reported as portable.
 func TestResolveHonorsDataDirEnv(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "explicit", "data")
 
-	t.Setenv("JOYVEND_DATA_DIR", dataDir)
+	t.Setenv("MYKEEP_DATA_DIR", dataDir)
 
 	layout, err := Resolve()
 	if err != nil {
@@ -45,7 +45,7 @@ func TestResolveHonorsDataDirEnv(t *testing.T) {
 		t.Errorf("DataDir = %q, want %q", layout.DataDir, dataDir)
 	}
 	if !layout.Portable {
-		t.Errorf("Portable = false, want true when JOYVEND_DATA_DIR is set")
+		t.Errorf("Portable = false, want true when MYKEEP_DATA_DIR is set")
 	}
 
 	// Resolve must have created the directory (MkdirAll with 0o700).
@@ -62,7 +62,7 @@ func TestResolveHonorsDataDirEnv(t *testing.T) {
 func TestResolveDataDirEnvCreatesNestedDirs(t *testing.T) {
 	root := t.TempDir()
 	dataDir := filepath.Join(root, "a", "b", "c", "data")
-	t.Setenv("JOYVEND_DATA_DIR", dataDir)
+	t.Setenv("MYKEEP_DATA_DIR", dataDir)
 
 	layout, err := Resolve()
 	if err != nil {
@@ -90,7 +90,7 @@ func TestResolveDataDirEnvUnwritableParent(t *testing.T) {
 
 	// Attempt to create a child under the read-only directory.
 	dataDir := filepath.Join(ro, "child", "data")
-	t.Setenv("JOYVEND_DATA_DIR", dataDir)
+	t.Setenv("MYKEEP_DATA_DIR", dataDir)
 
 	if _, err := Resolve(); err == nil {
 		t.Fatalf("Resolve succeeded, want error for unwritable parent %q", ro)
@@ -98,14 +98,14 @@ func TestResolveDataDirEnvUnwritableParent(t *testing.T) {
 }
 
 // TestResolveFallsBackToHostConfigDir drives the host-fallback branch. We unset
-// JOYVEND_DATA_DIR so resolution proceeds to binaryDir(). Under `go test` the
+// MYKEEP_DATA_DIR so resolution proceeds to binaryDir(). Under `go test` the
 // test binary lives in os.TempDir(), so binaryDir() reports ok=false and Resolve
-// must land on os.UserConfigDir()/joyvend/data with Portable=false. We redirect
+// must land on os.UserConfigDir()/mykeep/data with Portable=false. We redirect
 // the host config dir into a TempDir via XDG_CONFIG_HOME to avoid touching the
 // real one.
 func TestResolveFallsBackToHostConfigDir(t *testing.T) {
-	unsetEnv(t, "JOYVEND_DATA_DIR")
-	unsetEnv(t, "JOYVEND_DEV")
+	unsetEnv(t, "MYKEEP_DATA_DIR")
+	unsetEnv(t, "MYKEEP_DEV")
 
 	cfgRoot := t.TempDir()
 	// os.UserConfigDir honors XDG_CONFIG_HOME on Linux.
@@ -118,7 +118,7 @@ func TestResolveFallsBackToHostConfigDir(t *testing.T) {
 
 	// The test binary is in TempDir, so we expect the non-portable host fallback.
 	if exe, _ := os.Executable(); strings.HasPrefix(exe, os.TempDir()) {
-		want := filepath.Join(cfgRoot, "joyvend", "joyvend_kb")
+		want := filepath.Join(cfgRoot, "mykeep", "mykeep_kb")
 		if layout.DataDir != want {
 			t.Errorf("DataDir = %q, want host fallback %q", layout.DataDir, want)
 		}
@@ -149,11 +149,11 @@ func TestConfigAndDBPaths(t *testing.T) {
 	}
 
 	// Sanity: the constants match the documented on-disk names.
-	if filepath.Base(l.ConfigPath()) != "joyvend.config.json" {
-		t.Errorf("config base = %q, want joyvend.config.json", filepath.Base(l.ConfigPath()))
+	if filepath.Base(l.ConfigPath()) != "mykeep.config.json" {
+		t.Errorf("config base = %q, want mykeep.config.json", filepath.Base(l.ConfigPath()))
 	}
-	if filepath.Base(l.DBPath()) != "joyvend.db.enc" {
-		t.Errorf("db base = %q, want joyvend.db.enc", filepath.Base(l.DBPath()))
+	if filepath.Base(l.DBPath()) != "mykeep.db.enc" {
+		t.Errorf("db base = %q, want mykeep.db.enc", filepath.Base(l.DBPath()))
 	}
 }
 
@@ -209,7 +209,7 @@ func TestWritable(t *testing.T) {
 			t.Fatalf("writable(%q) = false, want true", dir)
 		}
 		// The probe file must be cleaned up.
-		if _, err := os.Stat(filepath.Join(dir, ".joyvend-write-probe")); !os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(dir, ".mykeep-write-probe")); !os.IsNotExist(err) {
 			t.Errorf("write-probe left behind: err=%v", err)
 		}
 	})
@@ -260,28 +260,28 @@ func TestBinaryDirTempExeFallback(t *testing.T) {
 	if !strings.HasPrefix(exe, os.TempDir()) {
 		t.Skipf("test binary %q is not under TempDir; cannot assert temp-exe path", exe)
 	}
-	unsetEnv(t, "JOYVEND_DEV")
+	unsetEnv(t, "MYKEEP_DEV")
 
 	if dir, ok := binaryDir(); ok {
 		t.Errorf("binaryDir() = (%q, true) for a temp-dir exe, want ok=false", dir)
 	}
 }
 
-// TestBinaryDirDevOverride verifies JOYVEND_DEV forces binaryDir to report
+// TestBinaryDirDevOverride verifies MYKEEP_DEV forces binaryDir to report
 // not-on-stick regardless of the executable's location.
 func TestBinaryDirDevOverride(t *testing.T) {
-	t.Setenv("JOYVEND_DEV", "1")
+	t.Setenv("MYKEEP_DEV", "1")
 	if dir, ok := binaryDir(); ok {
-		t.Errorf("binaryDir() = (%q, true) with JOYVEND_DEV set, want ok=false", dir)
+		t.Errorf("binaryDir() = (%q, true) with MYKEEP_DEV set, want ok=false", dir)
 	}
 }
 
-// TestResolveDevOverrideUsesHostFallback ties the JOYVEND_DEV override to the
-// full Resolve flow: with no JOYVEND_DATA_DIR and JOYVEND_DEV set, binaryDir is
+// TestResolveDevOverrideUsesHostFallback ties the MYKEEP_DEV override to the
+// full Resolve flow: with no MYKEEP_DATA_DIR and MYKEEP_DEV set, binaryDir is
 // skipped and Resolve must use the non-portable host config dir.
 func TestResolveDevOverrideUsesHostFallback(t *testing.T) {
-	unsetEnv(t, "JOYVEND_DATA_DIR")
-	t.Setenv("JOYVEND_DEV", "1")
+	unsetEnv(t, "MYKEEP_DATA_DIR")
+	t.Setenv("MYKEEP_DEV", "1")
 
 	cfgRoot := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", cfgRoot)
@@ -290,7 +290,7 @@ func TestResolveDevOverrideUsesHostFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
-	want := filepath.Join(cfgRoot, "joyvend", "joyvend_kb")
+	want := filepath.Join(cfgRoot, "mykeep", "mykeep_kb")
 	if layout.DataDir != want {
 		t.Errorf("DataDir = %q, want %q", layout.DataDir, want)
 	}
@@ -300,7 +300,7 @@ func TestResolveDevOverrideUsesHostFallback(t *testing.T) {
 }
 
 // helperSrc is a minimal program that calls Resolve() and prints the result. It
-// is compiled into a synthetic joyvend/bin/<os>-<arch>/ layout so we can observe
+// is compiled into a synthetic mykeep/bin/<os>-<arch>/ layout so we can observe
 // binaryDir()'s real walk-up behavior from a genuine on-disk executable, which
 // is impossible to do in-process because binaryDir reads os.Executable().
 const helperSrc = `package main
@@ -308,7 +308,7 @@ const helperSrc = `package main
 import (
 	"fmt"
 
-	"joyvend.io/internal/paths"
+	"mykeep.ai/internal/paths"
 )
 
 func main() {
@@ -323,7 +323,7 @@ func main() {
 `
 
 // buildHelper compiles helperSrc into outPath. The source is staged inside the
-// module tree (under a temp dir within the repo) so the joyvend.io import
+// module tree (under a temp dir within the repo) so the mykeep.ai import
 // resolves against the local module.
 func buildHelper(t *testing.T, outPath string) {
 	t.Helper()
@@ -394,7 +394,7 @@ func scratchOutsideTemp(t *testing.T) string {
 	if strings.HasPrefix(home, os.TempDir()) {
 		t.Skipf("home %q is under TempDir; cannot stage a non-temp exe", home)
 	}
-	dir, err := os.MkdirTemp(home, "joyvend-pathtest-")
+	dir, err := os.MkdirTemp(home, "mykeep-pathtest-")
 	if err != nil {
 		t.Skipf("cannot create scratch under home: %v", err)
 	}
@@ -402,12 +402,12 @@ func scratchOutsideTemp(t *testing.T) string {
 	return dir
 }
 
-// baseEnv returns the current environment with JOYVEND_* vars stripped so the
+// baseEnv returns the current environment with MYKEEP_* vars stripped so the
 // helper starts from a clean resolution state.
 func baseEnv() []string {
 	var env []string
 	for _, kv := range os.Environ() {
-		if strings.HasPrefix(kv, "JOYVEND_DATA_DIR=") || strings.HasPrefix(kv, "JOYVEND_DEV=") {
+		if strings.HasPrefix(kv, "MYKEEP_DATA_DIR=") || strings.HasPrefix(kv, "MYKEEP_DEV=") {
 			continue
 		}
 		env = append(env, kv)
@@ -416,8 +416,8 @@ func baseEnv() []string {
 }
 
 // TestBinaryDirDataBesideExe exercises the real drive layout: a platform-named
-// binary at the drive root resolves its data dir to joyvend_kb/ sitting beside it,
-// and reports Portable=true. All six platform binaries share this one joyvend_kb/.
+// binary at the drive root resolves its data dir to mykeep_kb/ sitting beside it,
+// and reports Portable=true. All six platform binaries share this one mykeep_kb/.
 func TestBinaryDirDataBesideExe(t *testing.T) {
 	driveRoot := scratchOutsideTemp(t)
 	platform := runtime.GOOS + "-" + runtime.GOARCH
@@ -425,15 +425,15 @@ func TestBinaryDirDataBesideExe(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		ext = ".exe"
 	}
-	exePath := filepath.Join(driveRoot, "joyvend-"+platform+ext)
+	exePath := filepath.Join(driveRoot, "mykeep-"+platform+ext)
 
 	buildHelper(t, exePath)
 
 	dataDir, portable := runHelper(t, exePath, baseEnv())
 
-	want := filepath.Join(driveRoot, "joyvend_kb")
+	want := filepath.Join(driveRoot, "mykeep_kb")
 	if dataDir != want {
-		t.Errorf("DataDir = %q, want %q (joyvend_kb beside the binary)", dataDir, want)
+		t.Errorf("DataDir = %q, want %q (mykeep_kb beside the binary)", dataDir, want)
 	}
 	if portable != "true" {
 		t.Errorf("Portable = %q, want true for on-stick binary", portable)
@@ -443,39 +443,39 @@ func TestBinaryDirDataBesideExe(t *testing.T) {
 	}
 }
 
-// TestBinaryDirDevOverrideSubprocess confirms that JOYVEND_DEV, passed to a real
+// TestBinaryDirDevOverrideSubprocess confirms that MYKEEP_DEV, passed to a real
 // on-stick binary, still forces the non-portable host fallback (binaryDir
 // short-circuits to ok=false).
 func TestBinaryDirDevOverrideSubprocess(t *testing.T) {
 	root := scratchOutsideTemp(t)
 	platform := runtime.GOOS + "-" + runtime.GOARCH
-	exePath := filepath.Join(root, "joyvend", "bin", platform, "joyvend")
+	exePath := filepath.Join(root, "mykeep", "bin", platform, "mykeep")
 	buildHelper(t, exePath)
 
 	cfgRoot := filepath.Join(root, "xdg")
-	env := append(baseEnv(), "JOYVEND_DEV=1", "XDG_CONFIG_HOME="+cfgRoot)
+	env := append(baseEnv(), "MYKEEP_DEV=1", "XDG_CONFIG_HOME="+cfgRoot)
 
 	dataDir, portable := runHelper(t, exePath, env)
 
-	want := filepath.Join(cfgRoot, "joyvend", "joyvend_kb")
+	want := filepath.Join(cfgRoot, "mykeep", "mykeep_kb")
 	if dataDir != want {
-		t.Errorf("DataDir = %q, want host fallback %q with JOYVEND_DEV", dataDir, want)
+		t.Errorf("DataDir = %q, want host fallback %q with MYKEEP_DEV", dataDir, want)
 	}
 	if portable != "false" {
-		t.Errorf("Portable = %q, want false under JOYVEND_DEV", portable)
+		t.Errorf("Portable = %q, want false under MYKEEP_DEV", portable)
 	}
 }
 
-// TestBinaryDirEnvOverrideBeatsWalkUp confirms JOYVEND_DATA_DIR wins even for a
+// TestBinaryDirEnvOverrideBeatsWalkUp confirms MYKEEP_DATA_DIR wins even for a
 // genuine on-stick binary.
 func TestBinaryDirEnvOverrideBeatsWalkUp(t *testing.T) {
 	root := scratchOutsideTemp(t)
 	platform := runtime.GOOS + "-" + runtime.GOARCH
-	exePath := filepath.Join(root, "joyvend", "bin", platform, "joyvend")
+	exePath := filepath.Join(root, "mykeep", "bin", platform, "mykeep")
 	buildHelper(t, exePath)
 
 	override := filepath.Join(root, "override", "data")
-	env := append(baseEnv(), "JOYVEND_DATA_DIR="+override)
+	env := append(baseEnv(), "MYKEEP_DATA_DIR="+override)
 
 	dataDir, portable := runHelper(t, exePath, env)
 	if dataDir != override {

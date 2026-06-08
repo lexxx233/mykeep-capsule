@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"joyvend.io/internal/config"
-	"joyvend.io/internal/paths"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/config"
+	"mykeep.ai/internal/paths"
+	"mykeep.ai/internal/store"
 )
 
 // runtimeInfo probes the embedded SQLite (version + whether the vec0 KNN backend is
@@ -36,7 +36,7 @@ func cmdDoctor() error {
 	}
 	sqliteVer, vec, fts5 := runtimeInfo()
 
-	fmt.Println("joyvend doctor")
+	fmt.Println("mykeep doctor")
 	fmt.Printf("  version:        %s\n", version)
 	fmt.Printf("  sqlite:         %s\n", sqliteVer)
 	fmt.Printf("  vec0 backend:   %s\n", yesno(vec, "available", "unavailable (brute-force)"))
@@ -45,7 +45,7 @@ func cmdDoctor() error {
 	fmt.Printf("  portable:       %s\n", yesno(layout.Portable, "yes (on the stick)", "no (host fallback)"))
 
 	if layout.IsFirstLaunch() {
-		fmt.Println("  setup:          not set up yet (run joyvend to create a password)")
+		fmt.Println("  setup:          not set up yet (run mykeep to create a password)")
 	} else {
 		fmt.Println("  setup:          configured")
 		if c, err := config.Load(layout.ConfigPath()); err == nil {

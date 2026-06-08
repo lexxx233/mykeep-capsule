@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"joyvend.io/internal/secret"
+	"mykeep.ai/internal/secret"
 )
 
 // TestDefault verifies Default() populates the documented field values.
@@ -92,7 +92,7 @@ func newConfigWithSecret(t *testing.T) (Config, secret.Envelope) {
 // asserting every field — including the secret.Envelope — survives intact.
 func TestSaveLoadRoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "joyvend.config.json")
+	path := filepath.Join(dir, "mykeep.config.json")
 
 	want, env := newConfigWithSecret(t)
 
@@ -164,7 +164,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 // original password and reject the wrong one. This is the real-world guarantee.
 func TestRoundTripEnvelopeStillUnwraps(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "joyvend.config.json")
+	path := filepath.Join(dir, "mykeep.config.json")
 
 	password := []byte("pw-a-very-secret-passphrase")
 	env, dek, err := secret.NewEnvelope(password)
@@ -200,7 +200,7 @@ func TestRoundTripEnvelopeStillUnwraps(t *testing.T) {
 // stray ".tmp" temp file from the atomic temp+rename dance.
 func TestSaveNoLeftoverTmp(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "joyvend.config.json")
+	path := filepath.Join(dir, "mykeep.config.json")
 
 	c, _ := newConfigWithSecret(t)
 
@@ -221,12 +221,12 @@ func TestSaveNoLeftoverTmp(t *testing.T) {
 		if strings.HasSuffix(e.Name(), ".tmp") {
 			t.Errorf("leftover .tmp file in dir: %q", e.Name())
 		}
-		if strings.HasPrefix(e.Name(), ".joyvend-cfg-") {
+		if strings.HasPrefix(e.Name(), ".mykeep-cfg-") {
 			t.Errorf("leftover temp prefix file in dir: %q", e.Name())
 		}
 	}
-	if len(names) != 1 || names[0] != "joyvend.config.json" {
-		t.Errorf("dir contents = %v, want exactly [joyvend.config.json]", names)
+	if len(names) != 1 || names[0] != "mykeep.config.json" {
+		t.Errorf("dir contents = %v, want exactly [mykeep.config.json]", names)
 	}
 }
 
@@ -234,7 +234,7 @@ func TestSaveNoLeftoverTmp(t *testing.T) {
 // inside, so the file should not be world/group readable).
 func TestSavePermissions(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "joyvend.config.json")
+	path := filepath.Join(dir, "mykeep.config.json")
 
 	c, _ := newConfigWithSecret(t)
 	if err := Save(path, &c); err != nil {
@@ -256,7 +256,7 @@ func TestSavePermissions(t *testing.T) {
 // as ciphertext, never as a readable field.
 func TestSavedJSONStructure(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "joyvend.config.json")
+	path := filepath.Join(dir, "mykeep.config.json")
 
 	c, _ := newConfigWithSecret(t)
 	if err := Save(path, &c); err != nil {
@@ -333,7 +333,7 @@ func TestLoadErrors(t *testing.T) {
 // appended/corrupted) and remains loadable after a second Save with new values.
 func TestSaveOverwritesAtomically(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "joyvend.config.json")
+	path := filepath.Join(dir, "mykeep.config.json")
 
 	first := Default()
 	if err := Save(path, &first); err != nil {

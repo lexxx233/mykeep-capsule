@@ -11,14 +11,14 @@ import (
 	"strings"
 	"testing"
 
-	"joyvend.io/internal/config"
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/ingest"
-	"joyvend.io/internal/retrieval"
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/server"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/config"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/ingest"
+	"mykeep.ai/internal/retrieval"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/server"
+	"mykeep.ai/internal/store"
 )
 
 // testStack wires up a real (encrypted, in-RAM) stack exactly as main would,

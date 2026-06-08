@@ -10,7 +10,7 @@ import (
 	"github.com/nlpodyssey/cybertron/pkg/tasks/textencoding"
 	"github.com/nlpodyssey/spago/mat"
 
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/vector"
 )
 
 // DefaultModel is the verified default embedder (PLAN §9.2.1, D17): BERT/WordPiece,

@@ -9,7 +9,7 @@ import (
 )
 
 // acquireLock takes an exclusive, fail-immediately lock via LockFileEx, released on
-// process exit. A second joyvend on the same drive gets ErrAlreadyRunning.
+// process exit. A second mykeep on the same drive gets ErrAlreadyRunning.
 func acquireLock(path string) (*fileLock, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {

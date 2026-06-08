@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/vector"
 )
 
 // KeywordSearch runs an FTS5/BM25 query over a bank, best-first. Returns up to

@@ -6,8 +6,8 @@ import (
 
 	_ "modernc.org/sqlite/vec" // pure-Go sqlite-vec: registers the vec0 vtable (D1)
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/vector"
 )
 
 // setupVec0 probes for vec0 (the pure-Go modernc/sqlite/vec backend). If present it

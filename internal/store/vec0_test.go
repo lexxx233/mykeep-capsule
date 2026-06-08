@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/vector"
 )
 
 func TestCapturesNotIndexedInVec0(t *testing.T) {

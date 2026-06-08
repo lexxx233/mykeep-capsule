@@ -9,7 +9,7 @@ import (
 )
 
 // acquireLock takes an exclusive, non-blocking advisory lock (flock), auto-released
-// when the process exits. A second joyvend on the same drive gets ErrAlreadyRunning.
+// when the process exits. A second mykeep on the same drive gets ErrAlreadyRunning.
 func acquireLock(path string) (*fileLock, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {

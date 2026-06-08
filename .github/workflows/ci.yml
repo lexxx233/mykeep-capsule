@@ -33,7 +33,7 @@ jobs:
           CGO_ENABLED: '0'
           GOOS: ${{ matrix.target.os }}
           GOARCH: ${{ matrix.target.arch }}
-        run: go build -trimpath -ldflags="-s -w" ./cmd/joyvend
+        run: go build -trimpath -ldflags="-s -w" ./cmd/mykeep
 
   # Portability is the whole point — exercise the load-bearing paths on real OSes.
   os-matrix:

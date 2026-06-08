@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/store"
 )
 
 func newStore(t *testing.T) *store.Store {

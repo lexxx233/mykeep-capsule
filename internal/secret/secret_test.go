@@ -194,7 +194,7 @@ func TestSealOpenBlobRoundTrip(t *testing.T) {
 		plaintext []byte
 	}{
 		{"empty", []byte{}},
-		{"small", []byte("hello joyvend")},
+		{"small", []byte("hello mykeep")},
 		{"binary", []byte{0x00, 0xFF, 0x10, 0x00, 0x42}},
 		{"large", bytes.Repeat([]byte("db-page"), 4096)},
 	}

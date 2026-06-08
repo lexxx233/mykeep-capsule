@@ -1,4 +1,4 @@
-// Package gui serves joyvend's cross-platform GUI: a local web app (embedded via
+// Package gui serves mykeep's cross-platform GUI: a local web app (embedded via
 // go:embed, opened in the default browser) that collects the password, unlocks the
 // encrypted store, and shows a dashboard. Pure Go, no GUI toolkit, no CGo — every OS
 // has a browser, which keeps the single static binary intact.
@@ -21,10 +21,10 @@ import (
 	"syscall"
 	"time"
 
-	"joyvend.io/internal/app"
-	"joyvend.io/internal/paths"
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/server"
+	"mykeep.ai/internal/app"
+	"mykeep.ai/internal/paths"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/server"
 )
 
 // The whole web/ tree is embedded (the dashboard page plus self-hosted woff2
@@ -85,7 +85,7 @@ func (a *App) Run() error {
 	}()
 
 	url := "http://" + a.addr
-	fmt.Printf("\n🪟  joyvend GUI: %s  (opening your browser…)\n", url)
+	fmt.Printf("\n🪟  mykeep GUI: %s  (opening your browser…)\n", url)
 	if err := openBrowser(url); err != nil {
 		fmt.Fprintf(os.Stderr, "couldn't open a browser automatically — visit %s\n", url)
 	}
@@ -214,7 +214,7 @@ func (a *App) v1(w http.ResponseWriter, r *http.Request) {
 	h := a.apiH
 	a.mu.Unlock()
 	if h == nil {
-		writeErr(w, 423, "locked — unlock joyvend first")
+		writeErr(w, 423, "locked — unlock mykeep first")
 		return
 	}
 	h.ServeHTTP(w, r)

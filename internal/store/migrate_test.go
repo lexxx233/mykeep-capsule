@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"joyvend.io/internal/secret"
+	"mykeep.ai/internal/secret"
 )
 
 func openTestStore(t *testing.T) *Store {
@@ -47,7 +47,7 @@ func TestMigrateFailClosedOnNewerDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := s.migrate("test")
-	if err == nil || !strings.Contains(err.Error(), "newer joyvend") {
+	if err == nil || !strings.Contains(err.Error(), "newer mykeep") {
 		t.Fatalf("expected fail-closed error, got %v", err)
 	}
 }

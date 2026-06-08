@@ -1,4 +1,4 @@
-// Package secret implements joyvend's at-rest encryption: an argon2id
+// Package secret implements mykeep's at-rest encryption: an argon2id
 // password-derived key-encryption-key (KEK) that wraps a random data-encryption
 // key (DEK); the DEK seals the whole database blob (PLAN §11.3, §11.4, §11.6).
 //
@@ -20,7 +20,7 @@ import (
 
 // ErrWrongPassphrase is returned when KEK derivation + AEAD open fails — i.e. the
 // supplied password is wrong or the envelope was tampered with.
-var ErrWrongPassphrase = errors.New("joyvend: wrong passphrase")
+var ErrWrongPassphrase = errors.New("mykeep: wrong passphrase")
 
 // KDFParams are stored in plaintext in the config so the KEK can be re-derived.
 // Threads is PINNED to the stored value (never runtime.NumCPU at derive time) so a
@@ -139,7 +139,7 @@ func open(key []byte, s Sealed, aad []byte) ([]byte, error) {
 		return nil, err
 	}
 	if len(s.Nonce) != gcm.NonceSize() {
-		return nil, errors.New("joyvend: bad nonce length")
+		return nil, errors.New("mykeep: bad nonce length")
 	}
 	return gcm.Open(nil, s.Nonce, s.Ciphertext, aad)
 }
@@ -172,7 +172,7 @@ func (k *KeyStore) Use(fn func(dek []byte) error) error {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 	if k.dek == nil {
-		return errors.New("joyvend: keystore locked")
+		return errors.New("mykeep: keystore locked")
 	}
 	return fn(k.dek)
 }

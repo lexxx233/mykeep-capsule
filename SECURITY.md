@@ -2,23 +2,23 @@
 
 ## Threat model
 
-joyvend protects your memories against a **lost or stolen USB stick**: an attacker with
+mykeep protects your memories against a **lost or stolen USB stick**: an attacker with
 the binary and all data files should learn nothing about your stored memories without
 your password.
 
-A secondary consideration is the **local host**: while joyvend is running and unlocked,
-the decryption key is in RAM and the REST API is reachable on loopback. joyvend trusts
+A secondary consideration is the **local host**: while mykeep is running and unlocked,
+the decryption key is in RAM and the REST API is reachable on loopback. mykeep trusts
 other processes running as the same OS user (this is inherent — see below).
 
 ## What is encrypted
 
 **Everything.** The entire SQLite database — memory text, the full-text (FTS5) keyword
 index, entity names, and the embedding vectors — is encrypted as a single blob,
-`joyvend.db.enc`, with **AES-256-GCM**. No plaintext database, and no plaintext temporary
+`mykeep.db.enc`, with **AES-256-GCM**. No plaintext database, and no plaintext temporary
 file, is ever written to the stick: the live database lives only in RAM while unlocked and
 is decrypted/re-sealed via SQLite's in-memory serialize/deserialize.
 
-There is **no API key** to protect, because joyvend runs no LLM and makes no network
+There is **no API key** to protect, because mykeep runs no LLM and makes no network
 calls — so your password's only job is to encrypt your memories.
 
 ## Key management

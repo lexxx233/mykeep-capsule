@@ -3,7 +3,7 @@ package store
 import (
 	"errors"
 
-	"joyvend.io/internal/secret"
+	"mykeep.ai/internal/secret"
 )
 
 // nonceLen is the AES-GCM standard nonce size.
@@ -18,7 +18,7 @@ func encodeSealed(s secret.Sealed) []byte {
 
 func decodeSealed(blob []byte, s *secret.Sealed) error {
 	if len(blob) < nonceLen {
-		return errors.New("joyvend: encrypted blob too short")
+		return errors.New("mykeep: encrypted blob too short")
 	}
 	s.Nonce = blob[:nonceLen]
 	s.Ciphertext = blob[nonceLen:]

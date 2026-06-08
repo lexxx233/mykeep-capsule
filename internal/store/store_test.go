@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"testing"
 
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/secret"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/secret"
+	"mykeep.ai/internal/store"
 )
 
 func TestEncryptedRoundTripAndSearch(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	blob := filepath.Join(dir, "joyvend.db.enc")
+	blob := filepath.Join(dir, "mykeep.db.enc")
 
 	env, dek, err := secret.NewEnvelope([]byte("correct horse battery staple"))
 	if err != nil {

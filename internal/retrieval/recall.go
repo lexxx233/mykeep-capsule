@@ -1,4 +1,4 @@
-// Package retrieval is joyvend's recall pipeline: parallel keyword + vector arms,
+// Package retrieval is mykeep's recall pipeline: parallel keyword + vector arms,
 // fused with Reciprocal Rank Fusion (k=60, PLAN §5.4/§5.5), then a greedy token
 // budget. (The temporal arm and cross-encoder rerank are deferred per the plan.)
 package retrieval
@@ -9,10 +9,10 @@ import (
 	"sort"
 	"time"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
-	"joyvend.io/internal/store"
-	"joyvend.io/internal/vector"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
+	"mykeep.ai/internal/store"
+	"mykeep.ai/internal/vector"
 )
 
 const (
@@ -92,7 +92,7 @@ const (
 // Reflect assembles a broad, synthesis-oriented context bundle (PLAN §0.0): the same
 // multi-arm retrieval as Recall but with a larger budget and seed set, plus
 // associative expansion to memories sharing entities, and the distinct entities
-// surfaced. joyvend gathers; the calling agent synthesizes and may retain its
+// surfaced. mykeep gathers; the calling agent synthesizes and may retain its
 // conclusions (e.g. tagged "reflection").
 func (r *Recaller) Reflect(ctx context.Context, bankID string, req domain.RecallRequest) (domain.ReflectResponse, error) {
 	maxTokens := req.MaxTokens

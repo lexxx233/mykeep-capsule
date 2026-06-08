@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"joyvend.io/internal/paths"
+	"mykeep.ai/internal/paths"
 )
 
 // req builds a loopback request (RemoteAddr + Host) unless overridden.
@@ -32,8 +32,8 @@ func TestGUIServesPageAndState(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req("GET", "/", ""))
-	if w.Code != 200 || !strings.Contains(w.Body.String(), "joyvend") {
-		t.Fatalf("GET / => %d, body has joyvend=%v", w.Code, strings.Contains(w.Body.String(), "joyvend"))
+	if w.Code != 200 || !strings.Contains(w.Body.String(), "mykeep") {
+		t.Fatalf("GET / => %d, body has mykeep=%v", w.Code, strings.Contains(w.Body.String(), "mykeep"))
 	}
 
 	w = httptest.NewRecorder()

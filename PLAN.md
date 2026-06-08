@@ -1,4 +1,4 @@
-# joyvend.io — Implementation Plan (v1)
+# mykeep.ai — Implementation Plan (v1)
 
 > **Status:** Design complete, pending your review. No code written yet.
 > **Produced by:** a multi-agent research → synthesis → adversarial-review pass grounded in the
@@ -13,22 +13,22 @@
 
 ## 0. Read this first — decisions, amendments, and corrections
 
-### 0.0 ARCHITECTURE PIVOT (2026-06-06) — joyvend is an MCP memory server with NO LLM
+### 0.0 ARCHITECTURE PIVOT (2026-06-06) — mykeep is an MCP memory server with NO LLM
 **This supersedes all LLM/Chat/Ollama/remote-API/`reflect` content elsewhere in this doc** (§7, §9,
 §11 config, milestones M3/M4 — to be propagated). The decision:
 
-- joyvend is a **memory store + retrieval, exposed to AI agents as MCP tools** (`retain`/`recall` +
+- mykeep is a **memory store + retrieval, exposed to AI agents as MCP tools** (`retain`/`recall` +
   bank admin). The **calling agent does ALL reasoning** (entity/fact extraction, synthesis) with its
-  own model and passes structured results in; joyvend stores and retrieves. **Inversion of control.**
+  own model and passes structured results in; mykeep stores and retrieves. **Inversion of control.**
 - **Removed entirely:** every Chat/LLM adapter (`internal/llm`), the LLM extraction step, the Ollama
   companion, the remote API, and **the API key**. MCP *sampling* was rejected (deprecated MCP
   2026-07-28, never well supported).
 - **`reflect` — IMPLEMENTED as an agent-driven op with a knowledge hierarchy (update 2026-06-06):**
-  not LLM synthesis inside joyvend, but a *gather* endpoint that mirrors hindsight's reflect
+  not LLM synthesis inside mykeep, but a *gather* endpoint that mirrors hindsight's reflect
   hierarchy. Memories carry a **type** (`world`/`experience`/`observation`/`mental_model`, agent-set).
   Reflect does broad multi-arm retrieval + larger budget + associative entity expansion, then
   **prioritizes the agent's stored syntheses** (`mental_model` > `observation` > raw facts) so it
-  builds on prior conclusions. joyvend assembles the context; the agent's LLM synthesizes and retains
+  builds on prior conclusions. mykeep assembles the context; the agent's LLM synthesizes and retains
   its conclusion as a `mental_model`. (No internal LLM, no auto-consolidation — those are hindsight's,
   which runs its own LLM + a background consolidation pipeline.)
 - **Kept:** local pure-Go CPU **embeddings** (cybertron/bge-small — retrieval, not reasoning),
@@ -37,7 +37,7 @@
 - **Consequence:** with no API key, the master password's **only** job is encrypting the DB — one
   password, your memories, zero keys.
 - **Interface: a pure local REST API on loopback — NO MCP, NO skill file.** Integration is a
-  **copy-paste text snippet** that joyvend prints (startup banner + `joyvend snippet`) telling the
+  **copy-paste text snippet** that mykeep prints (startup banner + `mykeep snippet`) telling the
   user's AI client the endpoint + how to `retain`/`recall`; the agent (Claude Code/Cursor/any
   shell-or-fetch-capable client) calls the API with its existing tools. Default = loopback +
   Host-header guard, **session token OFF by default** (static tokenless snippet); `require_token` flag
@@ -48,7 +48,7 @@
 **✅ DECIDED — D1 (vector backend), per your call:** the **default vector backend is
 `modernc.org/sqlite/vec`** — the pure-Go (ccgo-transpiled C, *not* cgo) subpackage of the modernc
 driver that registers a real `sqlite-vec` `vec0` virtual table + KNN, storing vectors **inside the
-same `joyvend.db` file**. This supersedes `CLAUDE.md`'s original `sqlite-vec`-C-extension decision
+same `mykeep.db` file**. This supersedes `CLAUDE.md`'s original `sqlite-vec`-C-extension decision
 (impossible under a pure-Go driver) while keeping its intent: vectors in one SQLite file, one static
 no-CGo cross-compilable binary. **Brute-force exact cosine over float32 BLOBs is retained as an
 automatic fallback** (used if `vec0` isn't registered at runtime; also a correctness oracle) — it is
@@ -62,7 +62,7 @@ executable"). Evidence in §5.1.1. The fallback remains as insurance, but the de
 
 **✅ DECIDED — D13: encrypt the WHOLE DB at rest, per your call.** Not just the API key — *all* memory
 content, the FTS5 index, entity names, and embedding vectors live inside the encryption boundary. The
-`.db` is one AES-256-GCM blob on the stick (`joyvend.db.enc`); unlock decrypts it into an in-RAM
+`.db` is one AES-256-GCM blob on the stick (`mykeep.db.enc`); unlock decrypts it into an in-RAM
 SQLite DB where FTS5 + vec0 run on plaintext; writes hit RAM and a **debounced flush** (D19) re-seals
 the whole blob a few seconds later (sync on shutdown/eject); the password-derived KEK/DEK unlocks
 everything. A stolen powered-off stick yields only ciphertext. **Cost:** the whole DB
@@ -86,7 +86,7 @@ D19 re-seal cadence) all have working defaults in the plan; flip them in §15 if
 | Durability wording | "durable across yank" | **best-effort; safe-eject required** (USB/FAT lie about flush). |
 | Canonical Go types | multiple fields under one JSON tag (uncompilable) | **rewritten with correct per-field tags** + a golden marshal test; frozen before M3. See §8.2. |
 | argon2id params | `m=64MiB, t=3` | **calibrated at setup toward 256 MiB–1 GiB** (floor 256 MiB any host can meet) + a **passphrase-strength policy**. The rate-limit does nothing against an offline crack. |
-| Key material in RAM | "zeroize best-effort" | + **`mlock`/`VirtualLock`** to keep key/passphrase out of swap; passphrase stays `[]byte` (never a Go `string`); `JOYVEND_PASSPHRASE` unset immediately after read. |
+| Key material in RAM | "zeroize best-effort" | + **`mlock`/`VirtualLock`** to keep key/passphrase out of swap; passphrase stays `[]byte` (never a Go `string`); `MYKEEP_PASSPHRASE` unset immediately after read. |
 | GCM AAD | bind `schema_version` only | **bind the full secret-envelope header** (KDF algo+params+salt + enc algo+nonce + schema_version). |
 | Loopback guard | bind 127.0.0.1 + unlock | + **validate the HTTP `Host` header** against loopback literals (DNS-rebinding), reject wildcard binds, session token from `crypto/rand` compared with `subtle.ConstantTimeCompare` + TTL. |
 | Temporal arm | "regex heuristic" (hindsight uses `dateparser`) | **scoped to an enumerated, closed pattern set** for v1 (D14); unsupported phrasing → arm cleanly absent. |
@@ -102,19 +102,19 @@ D19 re-seal cadence) all have working defaults in the plan; flip them in §15 if
 ### 1.1 System topology — one binary set + one DB, all on the stick
 
 ```
-   HOST (Windows / macOS / Linux)                 USB DRIVE :  <DRIVE>/joyvend/
+   HOST (Windows / macOS / Linux)                 USB DRIVE :  <DRIVE>/mykeep/
  ┌───────────────────────────┐            ┌──────────────────────────────────────────────┐
- │  AI agent / app / SDK      │            │  joyvend.cmd  joyvend.command  joyvend.sh      │
- │  joyvend CLI (thin client) │            │      (thin OS+arch-detect launchers)           │
+ │  AI agent / app / SDK      │            │  mykeep.cmd  mykeep.command  mykeep.sh      │
+ │  mykeep CLI (thin client) │            │      (thin OS+arch-detect launchers)           │
  └─────────────┬─────────────┘            │  bin/                                          │
-               │ HTTP/JSON                 │    windows-amd64/joyvend.exe   darwin-arm64/…  │
-               │ 127.0.0.1:8765            │    linux-amd64/joyvend         … (6 static     │
+               │ HTTP/JSON                 │    windows-amd64/mykeep.exe   darwin-arm64/…  │
+               │ 127.0.0.1:8765            │    linux-amd64/mykeep         … (6 static     │
                │ (loopback only,           │                                  pure-Go bins) │
                ▼  Host-header checked)     │  data/   (created on first launch, SHARED)     │
- ┌───────────────────────────┐  reads/     │    ├── joyvend.config.json                     │
- │  joyvend  (running binary) │  resolves   │    │     plaintext: provider/model/base_url    │
+ ┌───────────────────────────┐  reads/     │    ├── mykeep.config.json                     │
+ │  mykeep  (running binary) │  resolves   │    │     plaintext: provider/model/base_url    │
  │  resolves data/ from its   │◀───────────│    │     + KDF params/salt + sealed secrets     │
- │  OWN location, never $HOME │  exe dir    │    └── joyvend.db                              │
+ │  OWN location, never $HOME │  exe dir    │    └── mykeep.db                              │
  └───────────────────────────┘             │          SQLite: relational + FTS5 + vectors   │
                                             └──────────────────────────────────────────────┘
    No installer · no host service · no cloud for storage · state travels with the stick
@@ -123,7 +123,7 @@ D19 re-seal cadence) all have working defaults in the plan; flip them in §15 if
 ### 1.2 Internal component stack (single process)
 
 ```
-        ┌──────────────────────────── cmd/joyvend (CLI dispatch) ───────────────────────────┐
+        ┌──────────────────────────── cmd/mykeep (CLI dispatch) ───────────────────────────┐
         │  serve · setup · unlock · settings · version · doctor · retain · recall · banks    │
         └───────────────┬──────────────────────────────────────────────┬────────────────────┘
                         │                                               │ (CLI memory ops are
@@ -227,7 +227,7 @@ both persist on the stick, so moving the stick carries full state.
 ### 2.4 Success criteria (corrected †review)
 1. `CGO_ENABLED=0 go build` cross-compiles to all six targets from one host; a CI guard proves the
    default build imports **zero** CGo.
-2. Fresh stick → `joyvend serve` runs setup, prompts a passphrase, writes an encrypted config;
+2. Fresh stick → `mykeep serve` runs setup, prompts a passphrase, writes an encrypted config;
    replug into a second machine → setup is **not** re-triggered, only an unlock prompt.
 3. Default (local, no LLM, no network): retain stores a raw chunk + a **local** 384-dim embedding,
    recall fuses keyword + semantic + temporal via RRF — **no outbound network at all**, no hang.
@@ -242,15 +242,15 @@ both persist on the stick, so moving the stick carries full state.
 
 ## 3. Architecture
 
-joyvend is one process exposing a local HTTP API and a thin CLI over the same core.
+mykeep is one process exposing a local HTTP API and a thin CLI over the same core.
 
 - **paths** — the portability keystone. Resolves the data dir from `os.Executable()` →
-  `filepath.EvalSymlinks` → `filepath.Dir`, then `joyvend_kb/` beside the binary (the binaries sit
-  flat at the drive root, so all six share one `joyvend_kb/`). Detects go-run/temp-exe,
+  `filepath.EvalSymlinks` → `filepath.Dir`, then `mykeep_kb/` beside the binary (the binaries sit
+  flat at the drive root, so all six share one `mykeep_kb/`). Detects go-run/temp-exe,
   macOS AppTranslocation, and read-only mounts (temp-write probe); on failure falls back to
-  `os.UserConfigDir()/joyvend` with `portable=false`. Re-resolves at every startup (Windows drive
+  `os.UserConfigDir()/mykeep` with `portable=false`. Re-resolves at every startup (Windows drive
   letters churn). Exposes `DataDir()`, `DBPath()`, `ConfigPath()`, `IsFirstLaunch()`, `Portable()`.
-- **config** — loads/saves `joyvend.config.json` (atomic temp+rename, `fsync` temp + dir). Holds
+- **config** — loads/saves `mykeep.config.json` (atomic temp+rename, `fsync` temp + dir). Holds
   plaintext provider/model/base-url/embedding block + the sealed-secret envelope. Never serializes a
   secret in cleartext (`json:"-"`).
 - **secret** — argon2id KDF + AES-256-GCM seal/open + a **KEK/DEK** split (passphrase→KEK wraps a
@@ -269,10 +269,10 @@ joyvend is one process exposing a local HTTP API and a thin CLI over the same co
   little-endian; the `embedding.vec` BLOB feeds both paths.
 - **embed** — `Embedder` interface. **`LocalEmbedder`** (cybertron/spaGO, pure-Go, CPU,
   `bge-small-en-v1.5` 384-dim, model bundled in `data/`); `HashEmbedder` last-resort fallback. **No
-  remote, no LLM** — embeddings are the only model joyvend runs, and it's local.
+  remote, no LLM** — embeddings are the only model mykeep runs, and it's local.
 - **server** *(the only interface, §0.0)* — pure-Go `net/http` REST API on loopback; the calling
   agent uses its shell/fetch tool to hit it. Prints a copy-paste integration snippet (also via
-  `joyvend snippet`). **No MCP, no `internal/llm`** — the agent is the LLM and does all reasoning.
+  `mykeep snippet`). **No MCP, no `internal/llm`** — the agent is the LLM and does all reasoning.
 - **ingest** — the retain pipeline (chunk → local embed → store; agent may supply structured entities).
 - **retrieval** — the recall pipeline.
 - **domain** — shared Go types (the frozen JSON/SDK contract).
@@ -283,11 +283,11 @@ joyvend is one process exposing a local HTTP API and a thin CLI over the same co
 
 ## 4. Repository layout
 
-Module path `joyvend.io` (an app, everything under `internal/`). Pin `modernc.org/sqlite v1.52.0`.
+Module path `mykeep.ai` (an app, everything under `internal/`). Pin `modernc.org/sqlite v1.52.0`.
 
 ```
-joyvend.io/
-├── go.mod                       # module joyvend.io; pin modernc.org/sqlite v1.52.0
+mykeep.ai/
+├── go.mod                       # module mykeep.ai; pin modernc.org/sqlite v1.52.0
 ├── go.sum
 ├── CLAUDE.md
 ├── PLAN.md                      # this file
@@ -295,7 +295,7 @@ joyvend.io/
 ├── README.md                    # USB usage, exFAT, Gatekeeper/SmartScreen, safe-eject
 ├── SECURITY.md                  # threat model + what is/ isn't encrypted (D13)
 ├── .github/workflows/ci.yml     # 6-target CGO_ENABLED=0 matrix + no-CGo guard + mac/win jobs
-├── cmd/joyvend/main.go          # arg parse → resolve paths → first-launch detect → dispatch
+├── cmd/mykeep/main.go          # arg parse → resolve paths → first-launch detect → dispatch
 └── internal/
     ├── paths/        paths.go paths_test.go
     ├── config/       config.go config_test.go
@@ -330,7 +330,7 @@ joyvend.io/
   FTS5-absent build only fails at query time with `no such module: fts5`.
 - **Default vector backend: `modernc.org/sqlite/vec`** — the pure-Go (ccgo-transpiled C, *not* cgo)
   subpackage of the same driver, blank-imported to register a real `sqlite-vec` `vec0` virtual table
-  + KNN. Vectors live as `vec0` rows **inside the same `joyvend.db` file**, no second store, no CGo,
+  + KNN. Vectors live as `vec0` rows **inside the same `mykeep.db` file**, no second store, no CGo,
   cross-compiles to all six targets exactly like the parent driver. This supersedes `CLAUDE.md`'s
   original `sqlite-vec`-C-extension decision, which is literally impossible under a pure-Go driver.
 - **Important — same recall profile as brute force:** `sqlite-vec`'s `vec0` KNN is itself an
@@ -476,7 +476,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE schema_version (
   version    INTEGER NOT NULL,            -- highest migration applied
-  min_binary TEXT    NOT NULL DEFAULT '', -- minimum joyvend version this drive requires
+  min_binary TEXT    NOT NULL DEFAULT '', -- minimum mykeep version this drive requires
   updated_at INTEGER NOT NULL
 );
 
@@ -843,7 +843,7 @@ The earlier `richlocal`/Hugot path (which needed a CGo tokenizer) is **dropped**
 build() {  # $1=GOOS $2=GOARCH $3=ext
   CGO_ENABLED=0 GOOS="$1" GOARCH="$2" \
     go build -trimpath -ldflags="-s -w -X main.version=$VERSION" \
-    -o "dist/$1-$2/joyvend$3" ./cmd/joyvend
+    -o "dist/$1-$2/mykeep$3" ./cmd/mykeep
 }
 build windows amd64 .exe ; build windows arm64 .exe
 build darwin  amd64 ""    ; build darwin  arm64 ""
@@ -856,28 +856,28 @@ matrix** (needs CGo until a pure-Go tokenizer exists).
 if anything pulls in cgo) **and** a `go list -deps -f '{{.ImportPath}} {{.CgoFiles}}'` grep asserting
 no `import "C"` in the default build's dependency graph.
 
-### 10.2 Drive layout (flat: binaries + launchers at the root, data in joyvend_kb/)
+### 10.2 Drive layout (flat: binaries + launchers at the root, data in mykeep_kb/)
 ```
 <USB DRIVE>/
-├── joyvend.cmd       # Windows: PROCESSOR_ARCHITECTURE + PROCESSOR_ARCHITEW6432; prefer arm64 if either reports ARM64, else amd64
-├── joyvend.command   # macOS: exec joyvend-darwin-$(uname -m)
-├── joyvend.sh        # Linux: exec joyvend-linux-$(uname -m)
-├── joyvend-{windows,darwin,linux}-{amd64,arm64}[.exe]   # six platform binaries at the root
-└── joyvend_kb/       # created on first launch; SHARED across all platforms
-    ├── joyvend.db.enc
-    ├── joyvend.config.json
+├── mykeep.cmd       # Windows: PROCESSOR_ARCHITECTURE + PROCESSOR_ARCHITEW6432; prefer arm64 if either reports ARM64, else amd64
+├── mykeep.command   # macOS: exec mykeep-darwin-$(uname -m)
+├── mykeep.sh        # Linux: exec mykeep-linux-$(uname -m)
+├── mykeep-{windows,darwin,linux}-{amd64,arm64}[.exe]   # six platform binaries at the root
+└── mykeep_kb/       # created on first launch; SHARED across all platforms
+    ├── mykeep.db.enc
+    ├── mykeep.config.json
     └── models/
 ```
-Each binary resolves `joyvend_kb/` as a **sibling of itself** (its own dir = the drive root); no
+Each binary resolves `mykeep_kb/` as a **sibling of itself** (its own dir = the drive root); no
 walk-up. This separates code (regenerable binaries) from data (the encrypted KB). Total drive
 footprint ≈ 6 × binary size (~15–25 MB each pure-Go) — another reason `richlocal` (+~90 MB each)
-stays off by default. (Updated 2026-06-06: was `joyvend/bin/<os>-<arch>/joyvend` + `data/`.)
+stays off by default. (Updated 2026-06-06: was `mykeep/bin/<os>-<arch>/mykeep` + `data/`.)
 
 ### 10.3 Code-signing realities
 - **macOS Gatekeeper:** unsigned + quarantined → blocked. Doc the `xattr -dr com.apple.quarantine
-  /Volumes/<DRIVE>/joyvend` workaround / right-click→Open. Proper fix: Developer ID + notarize (D11).
+  /Volumes/<DRIVE>/mykeep` workaround / right-click→Open. Proper fix: Developer ID + notarize (D11).
 - **Windows SmartScreen:** unsigned `.exe` → "More info → Run anyway". Proper fix: Authenticode/EV.
-- **Linux:** no Gatekeeper; FAT/exFAT have no exec bit → invoke via `sh joyvend.sh`.
+- **Linux:** no Gatekeeper; FAT/exFAT have no exec bit → invoke via `sh mykeep.sh`.
 
 ### 10.4 USB / filesystem hazards
 | Hazard | Reality | Mitigation |
@@ -894,7 +894,7 @@ stays off by default. (Updated 2026-06-06: was `joyvend/bin/<os>-<arch>/joyvend`
 ### 10.5 Schema migration / versioning
 Forward-only numbered SQL (`migrations/NNNN_name.sql`) embedded via `//go:embed`, each in its own
 transaction. `schema_version` tracks `version` + `min_binary`. Startup: read version; if DB version >
-highest embedded migration → **abort (fail closed)** ("this drive needs joyvend ≥ X"); else apply
+highest embedded migration → **abort (fail closed)** ("this drive needs mykeep ≥ X"); else apply
 higher migrations, bumping `version`/`min_binary` last. Per-migration transactions + `synchronous=FULL`
 mean a yank mid-migration leaves a consistent earlier version. No down-migrations.
 
@@ -903,14 +903,14 @@ mean a yank mid-migration leaves a consistent earlier version. No down-migration
 ## 11. Config & security
 
 ### 11.1 Launch flow — password-before-serving, no locked state
-`joyvend serve` resolves the data dir from the binary, then `IsFirstLaunch()` =
+`mykeep serve` resolves the data dir from the binary, then `IsFirstLaunch()` =
 `os.Stat(ConfigPath())` is NotExist (file presence, not host state — replugging into a fresh machine
 sees the file → NOT first launch).
 
 **First launch ever (no config) → SETUP, creates the password:**
 1. Prompt for a **decryption password (twice)** + accept the embedding-model default.
 2. Derive KEK (argon2id), generate a random DEK, wrap DEK under KEK, write config atomically, create
-   an empty encrypted `joyvend.db.enc`.
+   an empty encrypted `mykeep.db.enc`.
 3. Print the copy-paste integration snippet → **start serving** (already unlocked).
 
 **Every subsequent launch (config exists) → PROMPT to decrypt, then serve:**
@@ -924,12 +924,12 @@ sees the file → NOT first launch).
 "locking" = stopping the process (which flushes + zeroizes the key). Idle-timeout → flush + shut down
 (relaunch + password to resume).
 
-**Headless (no TTY):** password from `JOYVEND_PASSPHRASE` (read once, then `os.Unsetenv`) or piped
+**Headless (no TTY):** password from `MYKEEP_PASSPHRASE` (read once, then `os.Unsetenv`) or piped
 stdin; if neither is present, **refuse to start** (do not boot locked).
 
 > With no API key in the design (§0.0), the password's sole purpose is decrypting the DB.
 
-### 11.2 Config file (`joyvend.config.json`, beside the binary)
+### 11.2 Config file (`mykeep.config.json`, beside the binary)
 ```json
 {
   "schema_version": 1,
@@ -988,10 +988,10 @@ structures automatically; per-column would leave the FTS index as a plaintext co
 
 **Persistence model — DECIDED: debounced whole-blob re-seal (D19, option 2).** No journal file.
 
-**On-disk layout:** a single `joyvend.db.enc` — the whole SQLite DB, AES-256-GCM sealed under the DEK.
+**On-disk layout:** a single `mykeep.db.enc` — the whole SQLite DB, AES-256-GCM sealed under the DEK.
 Nothing else; no plaintext DB ever touches the stick.
 
-**Unlock:** decrypt `joyvend.db.enc` into an **in-RAM SQLite DB** (`:memory:`). FTS5 + `vec0` run on
+**Unlock:** decrypt `mykeep.db.enc` into an **in-RAM SQLite DB** (`:memory:`). FTS5 + `vec0` run on
 the plaintext-in-RAM DB, so recall is unchanged. Recovery is trivial — the blob is always whole and
 internally consistent (atomic rename), so there's nothing to replay.
 
@@ -1000,7 +1000,7 @@ internally consistent (atomic rename), so there's nothing to replay.
 2. mark the DB **dirty** and arm a **debounced flush** (fires after `flush_idle_ms` ≈ 3–5 s of write
    inactivity, or immediately once `flush_max_writes` ≈ 200 unflushed writes accrue — whichever first);
 3. **flush** = serialize the in-RAM DB → AES-256-GCM encrypt → **atomic** temp → `fsync` → rename over
-   `joyvend.db.enc` → clear dirty. A burst of retains coalesces into **one** re-seal, so we never pay
+   `mykeep.db.enc` → clear dirty. A burst of retains coalesces into **one** re-seal, so we never pay
    the O(DB-size) rewrite per write.
 
 **Synchronous flush (cancels the debounce, guarantees no loss) on:** SIGINT/SIGTERM, `lock`,
@@ -1035,7 +1035,7 @@ Go 1.26.4 + `modernc.org/sqlite@v1.52.0`:
   asserting `dc` to an interface with those two exported methods (the concrete `*conn` is unexported).
 - Built a source `:memory:` DB with a `memory` table, an external-content **FTS5** index, and a
   **vec0** vector table; `Serialize()` → 77,824 bytes in RAM.
-- `AES-256-GCM` sealed → `joyvend.db.enc` (77,852 bytes). A byte-grep for the known memory string
+- `AES-256-GCM` sealed → `mykeep.db.enc` (77,852 bytes). A byte-grep for the known memory string
   found **nothing** (on-disk artifact is pure ciphertext).
 - `Open()` → `Deserialize()` into a fresh `:memory:` DB; `SELECT`, `FTS5 MATCH 'roommate'`, and
   `vec0 KNN` all returned the correct rows on the restored DB.
@@ -1044,9 +1044,9 @@ Go 1.26.4 + `modernc.org/sqlite@v1.52.0`:
 
 ### 11.7 exe-dir resolution + read-only fallback
 `dir = filepath.Dir(filepath.EvalSymlinks(os.Executable()))`. Detect go-run/temp
-(`HasPrefix(exe, os.TempDir())` / `JOYVEND_DEV` / `JOYVEND_DATA_DIR`), macOS AppTranslocation
+(`HasPrefix(exe, os.TempDir())` / `MYKEEP_DEV` / `MYKEEP_DATA_DIR`), macOS AppTranslocation
 (`/AppTranslocation/`), and read-only mounts (atomic temp-write probe). On failure fall back to
-`os.UserConfigDir()/joyvend` with `portable=false` + a loud warning that config + DB will NOT travel
+`os.UserConfigDir()/mykeep` with `portable=false` + a loud warning that config + DB will NOT travel
 this session (D6: warn, not refuse, for v1). Re-resolve at every startup (Windows drive letters
 change). File perms `0600` on **both** config and DB; `0700` on any created host-fallback dir;
 restrict ACL to the current user on Windows. On FAT/exFAT unix perms are ignored — **encryption, not
@@ -1066,19 +1066,19 @@ output for the test api_key/passphrase/token and fails if found.
 
 ### M0 — Scaffolding
 **Goal:** empty repo → buildable, cross-compilable pure-Go skeleton that self-resolves its data dir.
-- [ ] `go mod init joyvend.io`; add `modernc.org/sqlite v1.52.0`, `golang.org/x/crypto`, `golang.org/x/term`, `golang.org/x/sys`
+- [ ] `go mod init mykeep.ai`; add `modernc.org/sqlite v1.52.0`, `golang.org/x/crypto`, `golang.org/x/term`, `golang.org/x/sys`
 - [x] **GATING SPIKE (D1) — DONE ✅ (2026-06-06, see §5.1.1).** Verified with Go 1.26.4 + `modernc.org/sqlite@v1.52.0`: blank-import auto-registers `vec0` (`vec_version()=v0.1.9`); cosine KNN matches brute-force ordering; builds static under `CGO_ENABLED=0`. Port the spike into `internal/vector` as a regression test.
-- [ ] `internal/paths`: `os.Executable`→`EvalSymlinks`→`Dir`, walk up to `joyvend/` root; `DataDir/DBPath/ConfigPath/IsFirstLaunch/Portable`
+- [ ] `internal/paths`: `os.Executable`→`EvalSymlinks`→`Dir`, walk up to `mykeep/` root; `DataDir/DBPath/ConfigPath/IsFirstLaunch/Portable`
 - [ ] go-run/temp detection + AppTranslocation + read-only writability probe with host fallback
-- [ ] `cmd/joyvend/main.go`: arg parse, dispatch `version` (version+SHA+SQLite version+`vec_available`), `serve`/`setup` stubs
+- [ ] `cmd/mykeep/main.go`: arg parse, dispatch `version` (version+SHA+SQLite version+`vec_available`), `serve`/`setup` stubs
 - [ ] `Makefile` `build()` over the six targets, `-trimpath -ldflags='-s -w'`
 - [ ] GitHub Actions: matrix build `CGO_ENABLED=0`
 - [ ] **†review** no-CGo guard: `CC=/bin/false` build + `go list -deps` cgo-grep
 - [ ] SMOKE: in-memory modernc SQLite `CREATE VIRTUAL TABLE t USING fts5(x)` (confirms FTS5 compiled in)
 - [ ] **†review** runtime backend probe: attempt `CREATE VIRTUAL TABLE _probe USING vec0(e float[2])`; set `vec_available`; default to `vec0`, else brute-force fallback (correctness identical)
 
-**Tests:** `paths_test` (faked exe at the drive root → `DataDir` is `joyvend_kb/` beside it;
-temp-exe → `JOYVEND_DATA_DIR`; read-only dir → host fallback + `Portable()==false`); CI six-target
+**Tests:** `paths_test` (faked exe at the drive root → `DataDir` is `mykeep_kb/` beside it;
+temp-exe → `MYKEEP_DATA_DIR`; read-only dir → host fallback + `Portable()==false`); CI six-target
 compile; `fts5_smoke_test`; **†review** no-CGo deps assertion.
 
 ### M1 — Config, setup & secret-at-rest
@@ -1088,11 +1088,11 @@ compile; `fts5_smoke_test`; **†review** no-CGo deps assertion.
 - [ ] **†review** KEK/DEK: passphrase→KEK; random DEK; wrap DEK under KEK; api_key under DEK
 - [ ] `secret.Seal`: random 16-B salt + 12-B nonce per save; `argon2.IDKey` **calibrated, threads PINNED**; **†review** full-envelope AAD
 - [ ] `secret.Unlock`: re-derive KEK, unwrap DEK, GCM Open; auth fail → `ErrWrongPassphrase`
-- [ ] **†review** `KeyStore`: `mlock`/`VirtualLock`, mutex, `Lock()` zeroizes; passphrase stays `[]byte`; `JOYVEND_PASSPHRASE` unset after read
+- [ ] **†review** `KeyStore`: `mlock`/`VirtualLock`, mutex, `Lock()` zeroizes; passphrase stays `[]byte`; `MYKEEP_PASSPHRASE` unset after read
 - [ ] **†review** passphrase policy (≥12 + entropy check); reject weak unless `--force`
 - [ ] `setup.go` interactive flow; **†review** shared anthropic-embedder validator (reused by HTTP setup)
 - [ ] CLI: `setup` (refuse if config exists), `settings get/set`, `unlock`
-- [ ] **D13** the DEK seals the **DB blob** (§11.6). With no API key (§0.0), the password's only job is DB encryption — KEK unwraps DEK, DEK seals `joyvend.db.enc`. *(M1 LLM/api_key remnants below — anthropic validator, `api_key`/`unlock_fail` envelope fields — are superseded by §0.0; drop during impl.)*
+- [ ] **D13** the DEK seals the **DB blob** (§11.6). With no API key (§0.0), the password's only job is DB encryption — KEK unwraps DEK, DEK seals `mykeep.db.enc`. *(M1 LLM/api_key remnants below — anthropic validator, `api_key`/`unlock_fail` envelope fields — are superseded by §0.0; drop during impl.)*
 
 **Tests:** seal→open round-trip; wrong passphrase → `ErrWrongPassphrase`; tampered ciphertext / AAD
 mismatch → fail; two saves → different salt+nonce; config save→reload preserves plaintext, never
@@ -1103,8 +1103,8 @@ writes secrets cleartext, no temp left on success; **†review** KDF determinism
 **Goal:** an **encrypted-at-rest** SQLite store: decrypt-to-RAM on unlock, **debounced whole-blob
 re-seal** on write (D19, no journal), forward-only migrations, per-OS single-instance lock, **defined concurrency model**.
 - [x] **D13 GATING SPIKE — DONE ✅ (§11.6.1).** modernc `conn.Serialize`/`Deserialize` confirmed; whole-DB (content+FTS5+vec0) encrypt round-trip works, on-disk blob is ciphertext, static `CGO_ENABLED=0`. Port `/tmp/cryptdbspike` into `internal/store/cryptdb_test.go`.
-- [ ] **D13** `store.OpenEncrypted`: decrypt `joyvend.db.enc` (AES-256-GCM, DEK) → in-RAM `:memory:` DB via `Deserialize`. No journal/replay — the blob is whole + atomic, so unlock is just decrypt+deserialize.
-- [ ] **D19** persistence: mark-dirty on write + **debounced flush** (`flush_idle_ms` ≈ 3–5 s / `flush_max_writes` ≈ 200, whichever first) = `Serialize` → AES-256-GCM → atomic temp+`fsync`+rename `joyvend.db.enc` → clear dirty; coalesces bursts into one re-seal
+- [ ] **D13** `store.OpenEncrypted`: decrypt `mykeep.db.enc` (AES-256-GCM, DEK) → in-RAM `:memory:` DB via `Deserialize`. No journal/replay — the blob is whole + atomic, so unlock is just decrypt+deserialize.
+- [ ] **D19** persistence: mark-dirty on write + **debounced flush** (`flush_idle_ms` ≈ 3–5 s / `flush_max_writes` ≈ 200, whichever first) = `Serialize` → AES-256-GCM → atomic temp+`fsync`+rename `mykeep.db.enc` → clear dirty; coalesces bursts into one re-seal
 - [ ] **D19** synchronous flush (cancel debounce) on SIGINT/SIGTERM, `lock`, idle-timeout, safe-eject, and `retain?sync=true`; ack is from RAM (durable within `flush_idle_ms`)
 - [ ] `0001_init.sql` (all tables + `memory_fts` external-content + triggers + `schema_version`)
 - [ ] `store.Open`: in-RAM DB PRAGMAs (`synchronous=OFF` is safe — durability is the periodic blob re-seal, not the RAM DB), `foreign_keys`, `temp_store=MEMORY`
@@ -1129,7 +1129,7 @@ per-OS lock 2nd-Open fails; admin pagination + tag filter; **†review** `-race`
 **D13/D19**: write → debounced flush → reopen recovers the memory; **flush coalescing** (a burst of M
 writes yields exactly one re-seal); **hard-yank** before flush loses only the unflushed burst, but a
 **sync flush / clean shutdown loses nothing**; `retain?sync=true` is durable on ack; the on-disk
-`joyvend.db.enc` contains **no plaintext** (byte-grep for a known memory string fails).
+`mykeep.db.enc` contains **no plaintext** (byte-grep for a known memory string fails).
 
 ### M3 — Embedder (local) + optional Chat
 **Goal:** the local pure-Go CPU embedder wired in (proven §9.2.1); Chat optional/off by default;
@@ -1209,13 +1209,13 @@ non-loopback refused; **†review** spoofed `Host` header rejected; **†review*
 - [ ] `serve` (first-launch auto-setup on TTY; `--addr`, `--offline`)
 - [ ] `doctor` (data dir + portability, FS type, journal mode, embedder tier, chat reachability, schema_version, lock status, FTS5 smoke, **†review** cold-scan benchmark, **†review** stale `*.tmp` cleanup)
 - [ ] CLI memory ops as thin HTTP clients (`--server`, `--json`, exit codes)
-- [ ] `Makefile dist`: build six → `joyvend-<os>-<arch>[.exe]` flat at the drive root, copy launchers
-- [ ] launchers detect OS/arch and exec; **†review** `joyvend.cmd` uses `PROCESSOR_ARCHITECTURE`+`PROCESSOR_ARCHITEW6432` (prefer arm64 if either reports ARM64)
+- [ ] `Makefile dist`: build six → `mykeep-<os>-<arch>[.exe]` flat at the drive root, copy launchers
+- [ ] launchers detect OS/arch and exec; **†review** `mykeep.cmd` uses `PROCESSOR_ARCHITECTURE`+`PROCESSOR_ARCHITEW6432` (prefer arm64 if either reports ARM64)
 - [ ] `README` (exFAT, `xattr` quarantine, SmartScreen, safe-eject); `SECURITY.md` (threat model + D13 status)
 
 **Tests:** `version` fields; `doctor` reports portable + journal mode; **†review** launcher shell
 test incl. Windows arch-detection branch; **†review** paths test asserting `os.Executable()` resolves
-to `joyvend-<os>-<arch>` at the drive root when invoked **via each launcher** (the load-bearing resolver);
+to `mykeep-<os>-<arch>` at the drive root when invoked **via each launcher** (the load-bearing resolver);
 `make dist` produces the expected tree; gated e2e (`-tags e2e`): build linux binary, `serve` in a
 temp drive, retain+recall via CLI.
 
@@ -1292,13 +1292,13 @@ M3 may proceed in parallel with M2 once M1 lands, but `domain/types.go` must be 
   **✅ Verified by spike (2026-06-06, §5.1.1):** `modernc/vec` registers `vec0` at v1.52.0
   (`vec_version()=v0.1.9`), cosine KNN matches brute-force, builds static under `CGO_ENABLED=0`.
 - [x] **D13 — Encrypt memory content at rest. DECIDED: whole-DB.** The entire `.db` is an AES-256-GCM
-  blob (`joyvend.db.enc`); unlock → in-RAM SQLite (FTS5 + vec0 on plaintext); writes → RAM + a
+  blob (`mykeep.db.enc`); unlock → in-RAM SQLite (FTS5 + vec0 on plaintext); writes → RAM + a
   **debounced whole-blob re-seal** (D19); one password-derived KEK/DEK unlocks everything. Covers
   content + FTS + vectors. Cost = whole DB in RAM → size ceiling + 450 MB warning. Full design §11.6.
   (Serialize/deserialize **verified**, §11.6.1.)
-- [x] **D2 — Write-time extraction. DECIDED: the AGENT does it, not joyvend (§0.0).** joyvend has no
+- [x] **D2 — Write-time extraction. DECIDED: the AGENT does it, not mykeep (§0.0).** mykeep has no
   LLM. retain stores raw content + a local embedding; if the calling agent extracts entities/facts
-  with its own model, it passes them in via `MemoryItem.Entities`. No joyvend-side extraction.
+  with its own model, it passes them in via `MemoryItem.Entities`. No mykeep-side extraction.
 - [ ] **D3 — Numeric score on `RecallResult`?** *Rec:* no score in body (hindsight-faithful); scores
   in `trace` only. Without a cross-encoder a single number over-promises.
 - [ ] **D4 — Ship the graph-traversal recall arm in v1?** *Rec:* defer to v2; schema stays
@@ -1333,7 +1333,7 @@ M3 may proceed in parallel with M2 once M1 lands, but `domain/types.go` must be 
   cybertron (BERT/WordPiece, **CLS pooling**), pure-Go CPU, sane ranking (related 0.69 vs unrelated
   0.42). `all-MiniLM-L6-v2` stays a lighter alternative. ⚠️ `multilingual-e5-small` uses XLM-R/
   SentencePiece — **not** confirmed in cybertron v0.2.1; needs its own spike if multilingual matters.
-- [x] **D18 — LLM in joyvend? DECIDED: NO (§0.0).** joyvend ships with no LLM, no Ollama, no remote
+- [x] **D18 — LLM in mykeep? DECIDED: NO (§0.0).** mykeep ships with no LLM, no Ollama, no remote
   API, no API key. The calling agent is the LLM; it does all reasoning via MCP tools. (Superseded the
   earlier Ollama-companion idea — unnecessary once the consumer is itself an agent.)
 - [x] **D19 — Encrypted-DB re-seal cadence. DECIDED: debounced whole-blob re-seal (option 2).** No
@@ -1341,8 +1341,8 @@ M3 may proceed in parallel with M2 once M1 lands, but `domain/types.go` must be 
   atomically; sync flush on shutdown/lock/idle/eject/`?sync=true`. Loss window = last few seconds only
   on a hard yank; clean eject is lossless. A journal (durable-on-ack) is a backward-compatible future
   upgrade if heavy-write/large-DB usage ever warrants it. See §11.6.
-- [x] **D20 — Agent integration. DECIDED: pure REST + copy-paste snippet, NO MCP.** joyvend is a local
-  loopback REST API; on start (and via `joyvend snippet`) it prints a paste-ready block the user drops
+- [x] **D20 — Agent integration. DECIDED: pure REST + copy-paste snippet, NO MCP.** mykeep is a local
+  loopback REST API; on start (and via `mykeep snippet`) it prints a paste-ready block the user drops
   into their AI client, which then calls the API with its shell/fetch tool. No MCP server, no skill
   file. Default loopback + Host-guard, session token off by default (`require_token` to enable).
 
@@ -1362,7 +1362,7 @@ M3 may proceed in parallel with M2 once M1 lands, but `domain/types.go` must be 
 | high | argon2 `threads` from `NumCPU()` → undecryptable after moving hosts. | PIN all KDF params (incl. threads) to stored plaintext; determinism test (4 vs 16 cores). |
 | high | argon2 work factor (64 MiB) too weak for an **offline** crack of a stolen envelope. | Calibrate toward 256 MiB–1 GiB (floor 256 MiB); passphrase-strength policy; rate-limit is only an online speed bump. |
 | high | Same-uid local process reads the decrypted key from RAM / loopback API; browser CSRF/DNS-rebinding to localhost. | Document the inherent same-uid trust; session token (`crypto/rand`+`ConstantTimeCompare`+TTL); `Host`-header + Origin checks; reject wildcard binds; auto-lock; `mlock`. |
-| medium | Derived key/passphrase paged to **host** swap (defeats "nothing host-side"). | `mlock`/`VirtualLock` best-effort; passphrase `[]byte`-only; `JOYVEND_PASSPHRASE` unset after read; document encrypted-swap advice. |
+| medium | Derived key/passphrase paged to **host** swap (defeats "nothing host-side"). | `mlock`/`VirtualLock` best-effort; passphrase `[]byte`-only; `MYKEEP_PASSPHRASE` unset after read; document encrypted-swap advice. |
 | low (was medium) | `modernc/sqlite/vec` (the **default** backend) unstable, or FTS5 unexpectedly not compiled in. | **Resolved by spike (§5.1.1):** `vec`+`vec0` confirmed working at v1.52.0 under `CGO_ENABLED=0`, KNN == brute-force. Residual risk is only future API drift; retained brute-force fallback (same exact result) keeps the semantic arm working regardless; `ncruces`+WASM `-tags vec` is a second escape hatch; M0 FTS5 smoke covers FTS5. |
 | medium | FAT32 4 GB single-file cap silently corrupts a growing DB. | Recommend exFAT; `doctor` warns on FAT32; refuse to grow past a safe threshold; all bank isolation in one DB. |
 | medium | Two hosts mount one drive / double launch races the file. | Per-OS advisory lock + refuse 2nd local launch; two-host mounting unsupported; `busy_timeout` for benign races. |

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/embed"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/embed"
 )
 
 func TestCaptureStoresExperienceTaggedCapture(t *testing.T) {

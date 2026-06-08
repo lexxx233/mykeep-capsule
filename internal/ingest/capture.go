@@ -7,8 +7,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"joyvend.io/internal/domain"
-	"joyvend.io/internal/store"
+	"mykeep.ai/internal/domain"
+	"mykeep.ai/internal/store"
 )
 
 // CaptureTag marks auto-captured raw turns (single-sourced in domain).
@@ -24,7 +24,7 @@ const (
 // `capture`, with mechanical (no-LLM) hygiene: trivial/length gating and near-duplicate
 // suppression against other captures. The trigger is automatic (a host hook per turn);
 // the judgment — what to keep, what to promote — stays the agent's. This is the
-// safety net that fixes silent under-retention without putting reasoning in joyvend.
+// safety net that fixes silent under-retention without putting reasoning in mykeep.
 func (in *Ingestor) Capture(ctx context.Context, bankID string, req domain.CaptureRequest) (domain.CaptureResponse, error) {
 	content := strings.TrimSpace(req.Text)
 	if req.Role != "" {

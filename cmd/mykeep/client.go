@@ -45,7 +45,7 @@ func httpJSON(method, url string, body any) ([]byte, int, error) {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {
-		return nil, 0, fmt.Errorf("is joyvend running? %w", err)
+		return nil, 0, fmt.Errorf("is mykeep running? %w", err)
 	}
 	defer resp.Body.Close()
 	data, _ := io.ReadAll(resp.Body)
@@ -63,7 +63,7 @@ func cmdRetain(args []string) error {
 	}
 	content := strings.TrimSpace(strings.Join(fs.Args(), " "))
 	if content == "" {
-		return errors.New("usage: joyvend retain [--bank b] [--tag t]... <content>")
+		return errors.New("usage: mykeep retain [--bank b] [--tag t]... <content>")
 	}
 	item := map[string]any{"content": content}
 	if len(tags) > 0 {
@@ -82,7 +82,7 @@ func cmdRetain(args []string) error {
 }
 
 // cmdCapture logs one raw turn (the auto-retain primitive that hooks call per turn).
-// It is intentionally non-fatal: if joyvend is down or rejects, it warns and exits 0
+// It is intentionally non-fatal: if mykeep is down or rejects, it warns and exits 0
 // so a capture failure never blocks the user's turn.
 func cmdCapture(args []string) error {
 	fs := flag.NewFlagSet("capture", flag.ContinueOnError)
@@ -96,7 +96,7 @@ func cmdCapture(args []string) error {
 	}
 	text := strings.TrimSpace(strings.Join(fs.Args(), " "))
 	if text == "" {
-		return errors.New("usage: joyvend capture [--bank b] [--role user|assistant] [--tag t]... <text>")
+		return errors.New("usage: mykeep capture [--bank b] [--role user|assistant] [--tag t]... <text>")
 	}
 	body := map[string]any{"text": text}
 	if *role != "" {
@@ -106,12 +106,12 @@ func cmdCapture(args []string) error {
 		body["tags"] = []string(tags)
 	}
 	data, code, err := httpJSON("POST", serverBase(*server)+"/v1/banks/"+*bank+"/capture", body)
-	if err != nil { // joyvend down — never block the turn
-		fmt.Fprintln(os.Stderr, "joyvend capture skipped:", err)
+	if err != nil { // mykeep down — never block the turn
+		fmt.Fprintln(os.Stderr, "mykeep capture skipped:", err)
 		return nil
 	}
 	if code != 200 {
-		fmt.Fprintf(os.Stderr, "joyvend capture skipped (server %d)\n", code)
+		fmt.Fprintf(os.Stderr, "mykeep capture skipped (server %d)\n", code)
 		return nil
 	}
 	var out struct {
@@ -137,7 +137,7 @@ func cmdRecall(args []string) error {
 	}
 	query := strings.TrimSpace(strings.Join(fs.Args(), " "))
 	if query == "" {
-		return errors.New("usage: joyvend recall [--bank b] [--json] <query>")
+		return errors.New("usage: mykeep recall [--bank b] [--json] <query>")
 	}
 	data, code, err := httpJSON("POST", serverBase(*server)+"/v1/banks/"+*bank+"/recall",
 		map[string]any{"query": query})

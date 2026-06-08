@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"joyvend.io/internal/domain"
+	"mykeep.ai/internal/domain"
 )
 
 // ListBanks returns a summary of every bank.
