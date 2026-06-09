@@ -5,63 +5,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>mykeep — portable memory</title>
 <style>
-  /* Self-hosted fonts (latin + latin-ext, woff2) — bundled in the binary so the GUI
-     renders identically offline, with no call to Google. License: fonts/OFL.txt. */
-  @font-face{font-family:'Cinzel';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/cinzel-500.woff2') format('woff2');}
-  @font-face{font-family:'Cinzel';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/cinzel-600.woff2') format('woff2');}
-  @font-face{font-family:'EB Garamond';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/eb-garamond-400.woff2') format('woff2');}
-  @font-face{font-family:'EB Garamond';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/eb-garamond-500.woff2') format('woff2');}
-  @font-face{font-family:'EB Garamond';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/eb-garamond-400italic.woff2') format('woff2');}
-  @font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/cormorant-garamond-400italic.woff2') format('woff2');}
+  /* Clean-technical theme — system fonts only, so the GUI renders identically offline
+     with zero embedded font assets and no network call. */
   :root{
-    --bg:#0c2438; --ink:#eee7d7;
-    --mist:rgba(238,231,215,.72); --mist2:rgba(238,231,215,.46);
-    --panel:rgba(238,231,215,.045); --line:rgba(201,162,75,.30); --line2:rgba(201,162,75,.18);
-    --gold:#c9a24b; --gold-bright:#e0c074; --gold-deep:#9c7a32; --err:#e8856b;
-    --key:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path d='M0,16 L0,0 L12,0 L12,12 L4,12 L4,4 L8,4 L8,8 L12,8 L12,16 L16,16' fill='none' stroke='black' stroke-width='2'/></svg>");
+    --bg:#0a0a0b; --panel:#121214; --panel-2:#161619;
+    --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.16);
+    --text:#ededf0; --muted:#9a9aa4; --faint:#6b6b75;
+    --accent:#5e9eff; --accent-soft:rgba(94,158,255,.14); --accent-line:rgba(94,158,255,.4);
+    --ship:#46c266; --err:#ff7a6b;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
     color-scheme:dark;
   }
   *{box-sizing:border-box;}
   body{
     margin:0; min-height:100vh; display:flex; justify-content:center;
-    background:
-      radial-gradient(120% 70% at 50% -8%, rgba(224,192,116,.10), transparent 55%),
-      linear-gradient(180deg,#0e2840,#0c2438 45%,#091d2f);
-    background-attachment:fixed; color:var(--ink);
-    font:17px/1.62 'EB Garamond',Georgia,serif;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    background:var(--bg); color:var(--text);
+    font:15px/1.6 var(--sans); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
-  .wrap{width:100%; max-width:680px; padding:44px 22px 72px;}
-  .topbar{display:flex; justify-content:space-between; align-items:flex-start; gap:16px;}
-  h1{font-family:'Cinzel',Georgia,serif; font-weight:600; font-size:25px; letter-spacing:.18em; text-transform:uppercase; margin:0; line-height:1; color:var(--ink);}
-  h1 .key{background:linear-gradient(180deg,var(--gold-bright),var(--gold) 55%,var(--gold-deep)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  .sub{font-family:'Cormorant Garamond',Georgia,serif; font-style:italic; color:var(--mist); margin:9px 0 0; font-size:15px;}
-  .rule{height:14px; margin:20px 0 26px; background:var(--gold); -webkit-mask:var(--key) repeat-x center / 14px 14px; mask:var(--key) repeat-x center / 14px 14px; opacity:.55;}
-  .card{position:relative; background:var(--panel); border:1px solid var(--line2); border-radius:4px; padding:22px; margin-bottom:16px;}
-  .card h2{font-family:'Cinzel',Georgia,serif; font-size:11.5px; text-transform:uppercase; letter-spacing:.26em; color:var(--gold-bright); font-weight:500; margin:0 0 16px;}
-  input[type=password], input[type=text], textarea{width:100%; background:rgba(9,29,47,.6); border:1px solid var(--line); color:var(--ink); border-radius:3px; padding:12px 13px; font:inherit; outline:none; transition:border-color .2s;}
-  input::placeholder, textarea::placeholder{color:var(--mist2);}
-  input:focus, textarea:focus{border-color:var(--gold);}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(80% 50% at 50% -10%,rgba(94,158,255,.07),transparent 70%);}
+  ::selection{background:var(--accent-soft);}
+  .wrap{width:100%; max-width:680px; padding:40px 22px 72px;}
+  .topbar{display:flex; justify-content:space-between; align-items:center; gap:16px;}
+  h1{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:600;font-size:18px;letter-spacing:-.01em;margin:0;color:var(--text);}
+  h1 .sq{width:24px;height:24px;border-radius:7px;border:1px solid var(--accent-line);background:var(--accent-soft);display:grid;place-items:center;font-size:.86rem;color:var(--text);}
+  h1 .key{color:var(--accent);}
+  .sub{color:var(--muted); margin:9px 0 0; font-size:14px;}
+  .rule{height:1px; margin:22px 0 24px; background:var(--line);}
+  .card{position:relative; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin-bottom:16px;}
+  .card h2{font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); font-weight:500; margin:0 0 16px;}
+  input[type=password], input[type=text], textarea{width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:11px 12px; font:inherit; outline:none; transition:border-color .18s;}
+  input::placeholder, textarea::placeholder{color:var(--faint);}
+  input:focus, textarea:focus{border-color:var(--accent-line);}
   textarea{resize:vertical; min-height:64px;}
-  button{font-family:'Cinzel',Georgia,serif; font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; background:linear-gradient(180deg,var(--gold-bright),var(--gold)); color:#1a1300; border:0; border-radius:3px; padding:12px 18px; font-weight:600; cursor:pointer; transition:.18s;}
-  button:hover{filter:brightness(1.07); transform:translateY(-1px);}
-  button.ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
-  button.ghost:hover{border-color:var(--gold); color:var(--gold-bright); transform:none; filter:none;}
-  button:disabled{opacity:.5; cursor:default; transform:none;}
+  button{font-family:var(--sans); font-size:13px; font-weight:550; background:var(--accent); color:#06121f; border:1px solid var(--accent); border-radius:8px; padding:11px 18px; cursor:pointer; transition:.18s ease;}
+  button:hover{filter:brightness(1.06); transform:translateY(-1px);}
+  button.ghost{background:var(--panel); color:var(--text); border:1px solid var(--line-2);}
+  button.ghost:hover{border-color:var(--accent-line); background:var(--accent-soft); transform:translateY(-1px); filter:none;}
+  button:disabled{opacity:.5; cursor:default; transform:none; filter:none;}
   .row{display:flex; gap:11px; align-items:center;}
   .row > input, .row > textarea{flex:1;}
-  .err{color:var(--err); font-size:14px; min-height:18px; margin-top:10px;}
-  .muted{color:var(--mist); font-size:14.5px;}
-  pre.snippet{white-space:pre-wrap; word-break:break-word; background:rgba(9,29,47,.7); border:1px solid var(--line2); border-radius:3px; padding:15px; font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; margin:0; color:var(--mist);}
-  .stat{display:flex; gap:30px; flex-wrap:wrap;}
-  .stat div b{font-family:'Cinzel',Georgia,serif; display:block; font-size:22px; color:var(--ink); font-weight:600;}
-  .stat div span{color:var(--mist2); font-size:12px; text-transform:uppercase; letter-spacing:.12em;}
+  .err{color:var(--err); font-size:13.5px; min-height:18px; margin-top:10px;}
+  .muted{color:var(--muted); font-size:14px;}
+  pre.snippet{white-space:pre-wrap; word-break:break-word; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:15px; font:12.5px/1.7 var(--mono); margin:0; color:var(--muted);}
+  .stat{display:flex; gap:34px; flex-wrap:wrap;}
+  .stat div b{font-family:var(--mono); display:block; font-size:22px; color:var(--text); font-weight:600;}
+  .stat div span{color:var(--faint); font-size:11px; text-transform:uppercase; letter-spacing:.1em;}
   .hidden{display:none;}
-  .result{border-top:1px solid var(--line2); padding:12px 0;}
+  .result{border-top:1px solid var(--line); padding:12px 0;}
   .result:first-child{border-top:0;}
-  .result .tags{color:var(--gold-bright); font-size:13px; margin-top:3px; font-style:italic;}
-  .pill{font-family:'Cinzel',Georgia,serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-bright); border:1px solid var(--line); background:rgba(201,162,75,.08); padding:5px 11px; border-radius:999px; white-space:nowrap;}
-  .spin{display:inline-block; width:13px; height:13px; border:2px solid rgba(238,231,215,.25); border-top-color:var(--gold-bright); border-radius:50%; animation:s .7s linear infinite; vertical-align:-2px;}
+  .result .tags{color:var(--accent); font-size:13px; margin-top:3px; font-family:var(--mono);}
+  .pill{font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; color:var(--muted); border:1px solid var(--line); background:var(--panel); padding:5px 11px; border-radius:999px; white-space:nowrap; display:inline-flex; align-items:center; gap:7px;}
+  .pill .d{width:6px;height:6px;border-radius:50%;background:var(--ship);}
+  .spin{display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,.16); border-top-color:var(--accent); border-radius:50%; animation:s .7s linear infinite; vertical-align:-2px;}
   @keyframes s{to{transform:rotate(360deg);}}
 </style>
 </head>
@@ -69,10 +66,10 @@
 <div class="wrap">
   <div class="topbar">
     <div>
-      <h1>my<span class="key">keep</span></h1>
+      <h1><span class="sq">m</span>my<span class="key">keep</span></h1>
       <p class="sub" id="subtitle">portable, encrypted memory for your AI agent</p>
     </div>
-    <span class="pill" id="encpill">🔒 encrypted</span>
+    <span class="pill" id="encpill"><span class="d"></span>encrypted</span>
   </div>
 
   <div class="rule"></div>

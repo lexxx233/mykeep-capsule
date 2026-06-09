@@ -6,18 +6,15 @@ package gui
 
 import (
 	"context"
-	"embed"
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io/fs"
-	"mime"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -28,38 +25,11 @@ import (
 	"mykeep.ai/internal/server"
 )
 
-// The whole web/ tree is embedded (the dashboard page plus self-hosted woff2
-// fonts under web/fonts/), so the GUI renders identically with no network.
+// The dashboard page is embedded (system fonts only — no font assets, no network),
+// so the GUI renders identically offline.
 //
-//go:embed web
-var webFS embed.FS
-
-// webRoot is web/ rooted so request paths like /fonts/x.woff2 map straight to
-// fonts/x.woff2; indexHTML is the dashboard, read once at startup.
-var webRoot = mustSub(webFS, "web")
-var indexHTML = mustReadFile(webRoot, "index.html")
-
-func init() {
-	// Guarantee a correct Content-Type for the bundled fonts even on hosts whose
-	// mime table lacks woff2 (e.g. the stick plugged into a fresh Windows box).
-	_ = mime.AddExtensionType(".woff2", "font/woff2")
-}
-
-func mustSub(fsys fs.FS, dir string) fs.FS {
-	s, err := fs.Sub(fsys, dir)
-	if err != nil {
-		panic(err)
-	}
-	return s
-}
-
-func mustReadFile(fsys fs.FS, name string) []byte {
-	b, err := fs.ReadFile(fsys, name)
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
+//go:embed web/index.html
+var indexHTML []byte
 
 type App struct {
 	layout  paths.Layout
@@ -113,7 +83,6 @@ func (a *App) Run() error {
 func (a *App) handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", a.index)                   // exactly "/", so it doesn't shadow /v1/ or /api/
-	mux.Handle("GET /fonts/", noDirList(http.FileServerFS(webRoot))) // self-hosted woff2 files; no directory index
 	mux.HandleFunc("GET /api/state", a.state)
 	mux.HandleFunc("POST /api/setup", a.setup)
 	mux.HandleFunc("POST /api/unlock", a.unlock)
@@ -246,18 +215,6 @@ func wipe(b []byte) {
 	for i := range b {
 		b[i] = 0
 	}
-}
-
-// noDirList serves files but returns 404 for a directory path (trailing slash), so the
-// embedded /fonts/ tree can't be enumerated via an auto-generated index.
-func noDirList(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/") {
-			http.NotFound(w, r)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
 }
 
 // loopbackGuard rejects non-loopback sockets and Host headers (PLAN §7.4).

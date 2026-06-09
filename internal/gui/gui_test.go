@@ -85,69 +85,16 @@ func TestGUISetupRequiresAPassword(t *testing.T) {
 	}
 }
 
-// TestGUIFontsAreSelfHosted proves the GUI renders with no network: the page
-// references no Google host, declares @font-face rules, and every woff2 the CSS
-// names is actually served from the embedded tree with a font MIME and valid bytes.
-func TestGUIFontsAreSelfHosted(t *testing.T) {
+// TestGUIRendersOffline proves the GUI needs no network: the page pulls in no web
+// fonts at all (system fonts only) — no Google host, no @font-face, no /fonts/ asset.
+func TestGUIRendersOffline(t *testing.T) {
 	h := newApp(t).handler()
-
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req("GET", "/", ""))
 	page := w.Body.String()
-	for _, bad := range []string{"fonts.googleapis.com", "fonts.gstatic.com"} {
+	for _, bad := range []string{"fonts.googleapis.com", "fonts.gstatic.com", "@font-face", "/fonts/"} {
 		if strings.Contains(page, bad) {
-			t.Fatalf("page still references %s — not offline", bad)
+			t.Fatalf("page references %q — should use system fonts only", bad)
 		}
 	}
-	if !strings.Contains(page, "@font-face") || !strings.Contains(page, "/fonts/") {
-		t.Fatal("page is missing @font-face rules pointing at /fonts/")
-	}
-
-	faces := []string{
-		"cinzel-500.woff2", "cinzel-600.woff2",
-		"eb-garamond-400.woff2", "eb-garamond-500.woff2", "eb-garamond-400italic.woff2",
-		"cormorant-garamond-400italic.woff2",
-	}
-	for _, f := range faces {
-		// the CSS must name it, and the server must serve it
-		if !strings.Contains(page, "/fonts/"+f) {
-			t.Errorf("CSS does not reference /fonts/%s", f)
-		}
-		fw := httptest.NewRecorder()
-		h.ServeHTTP(fw, req("GET", "/fonts/"+f, ""))
-		if fw.Code != 200 {
-			t.Errorf("GET /fonts/%s => %d, want 200", f, fw.Code)
-			continue
-		}
-		if ct := fw.Header().Get("Content-Type"); !strings.Contains(ct, "font/woff2") {
-			t.Errorf("/fonts/%s Content-Type = %q, want font/woff2", f, ct)
-		}
-		if b := fw.Body.Bytes(); len(b) < 4 || string(b[:4]) != "wOF2" {
-			t.Errorf("/fonts/%s is not valid woff2 (magic %q)", f, firstN(fw.Body.Bytes(), 4))
-		}
-	}
-}
-
-// TestGUIFontsNoDirListing proves /fonts/ (trailing slash) does not return an index of
-// the embedded assets — only named files are served.
-func TestGUIFontsNoDirListing(t *testing.T) {
-	h := newApp(t).handler()
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, req("GET", "/fonts/", ""))
-	if w.Code != 404 {
-		t.Fatalf("GET /fonts/ => %d, want 404 (no directory index)", w.Code)
-	}
-	// a named font still serves
-	w = httptest.NewRecorder()
-	h.ServeHTTP(w, req("GET", "/fonts/cinzel-600.woff2", ""))
-	if w.Code != 200 {
-		t.Fatalf("GET /fonts/cinzel-600.woff2 => %d, want 200", w.Code)
-	}
-}
-
-func firstN(b []byte, n int) string {
-	if len(b) < n {
-		n = len(b)
-	}
-	return string(b[:n])
 }
