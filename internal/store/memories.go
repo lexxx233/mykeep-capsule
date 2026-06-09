@@ -160,6 +160,12 @@ func (s *Store) ListMemoriesFiltered(bankID string, limit, offset int, factType,
 	if limit <= 0 {
 		limit = 100
 	}
+	if limit > 1000 { // bound the amplified read (one sub-query set per row)
+		limit = 1000
+	}
+	if offset < 0 { // a negative offset yields a SQLite error → 500
+		offset = 0
+	}
 	where := ` WHERE bank_id=?`
 	args := []any{bankID}
 	if factType != "" {

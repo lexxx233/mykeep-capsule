@@ -128,6 +128,23 @@ func TestGUIFontsAreSelfHosted(t *testing.T) {
 	}
 }
 
+// TestGUIFontsNoDirListing proves /fonts/ (trailing slash) does not return an index of
+// the embedded assets — only named files are served.
+func TestGUIFontsNoDirListing(t *testing.T) {
+	h := newApp(t).handler()
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req("GET", "/fonts/", ""))
+	if w.Code != 404 {
+		t.Fatalf("GET /fonts/ => %d, want 404 (no directory index)", w.Code)
+	}
+	// a named font still serves
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req("GET", "/fonts/cinzel-600.woff2", ""))
+	if w.Code != 200 {
+		t.Fatalf("GET /fonts/cinzel-600.woff2 => %d, want 200", w.Code)
+	}
+}
+
 func firstN(b []byte, n int) string {
 	if len(b) < n {
 		n = len(b)

@@ -60,6 +60,7 @@ type Store struct {
 	// never blocks reads/writes; persistedGen keeps the on-disk blob monotonic.
 	flushMu      sync.Mutex
 	persistedGen uint64
+	failedGen    uint64 // highest gen whose write FAILED; lastFlushErr is cleared only once a write of gen >= this lands
 
 	vecAvailable bool // vec0 KNN backend present (D1)
 	vecCreated   bool // vec_idx table built
@@ -239,9 +240,18 @@ func (s *Store) reseal() error {
 	s.flushMu.Unlock()
 
 	s.mu.Lock()
-	s.lastFlushErr = werr
 	if werr != nil {
+		s.lastFlushErr = werr
 		s.dirty = true // failed → stay dirty so the idle timer retries
+		if gen > s.failedGen {
+			s.failedGen = gen
+		}
+	} else if gen >= s.failedGen {
+		// this successful write covers (or post-dates) every prior failure — only NOW is
+		// it safe to clear the error. An OLDER snapshot winning after a newer one failed
+		// must NOT clear it, or /v1/health would report "ok" while the newest write is
+		// still not on disk.
+		s.lastFlushErr = nil
 	}
 	s.mu.Unlock()
 	return werr

@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -112,7 +113,7 @@ func (a *App) Run() error {
 func (a *App) handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", a.index)                   // exactly "/", so it doesn't shadow /v1/ or /api/
-	mux.Handle("GET /fonts/", http.FileServerFS(webRoot)) // self-hosted woff2, served from the embedded tree
+	mux.Handle("GET /fonts/", noDirList(http.FileServerFS(webRoot))) // self-hosted woff2 files; no directory index
 	mux.HandleFunc("GET /api/state", a.state)
 	mux.HandleFunc("POST /api/setup", a.setup)
 	mux.HandleFunc("POST /api/unlock", a.unlock)
@@ -245,6 +246,18 @@ func wipe(b []byte) {
 	for i := range b {
 		b[i] = 0
 	}
+}
+
+// noDirList serves files but returns 404 for a directory path (trailing slash), so the
+// embedded /fonts/ tree can't be enumerated via an auto-generated index.
+func noDirList(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // loopbackGuard rejects non-loopback sockets and Host headers (PLAN §7.4).
