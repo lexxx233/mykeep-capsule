@@ -171,7 +171,9 @@ async function doUnlock(){
   if (firstLaunch && pw !== $('#pw2').value){ $('#lockErr').textContent = 'Passwords do not match.'; return; }
   if (!pw){ $('#lockErr').textContent = 'Password required.'; return; }
   $('#unlockBtn').disabled = true;
-  $('#lockBusy').innerHTML = '<span class="spin"></span> unlocking & loading model…';
+  $('#lockBusy').innerHTML = firstLaunch
+    ? '<span class="spin"></span> Setting up — downloading the embedding model (~90 MB, first launch only). This can take a minute…'
+    : '<span class="spin"></span> Unlocking & loading model…';
   const {ok, code, body} = await jpost(firstLaunch ? '/api/setup' : '/api/unlock', {password: pw});
   $('#unlockBtn').disabled = false; $('#lockBusy').textContent = '';
   if (ok) { $('#pw').value=''; $('#pw2').value=''; return showDash(); }
