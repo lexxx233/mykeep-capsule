@@ -6,73 +6,71 @@ semantic-search, embeddings, rag, claude, cursor, self-hosted, portable, golang,
 
 <div align="center">
 
-# 🧠 mykeep
+# 🧠 mykeep · Capsule
 
-### Portable, encrypted, local-first memory for AI agents — on a USB stick.
+### Portable, encrypted memory for AI agents — on a USB drive.
 
-A single pure-Go binary + one encrypted file. Plug it into any machine, type your password,
-and your AI assistant gains a **persistent, private, semantic memory** it talks to over a tiny
-local API. No cloud. No API keys. No database to run.
+One pure-Go binary and one encrypted file. Plug it into any machine, type your password, and
+your agent gains a private, persistent, **semantic memory** it talks to over a tiny local API.
+No cloud. No API keys. No database to run.
 
 ![Go](https://img.shields.io/badge/Go-1.26%2B-00ADD8?logo=go&logoColor=white)
 ![pure Go · no CGo](https://img.shields.io/badge/pure%20Go-no%20CGo-00ADD8)
 ![platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-555)
-![storage](https://img.shields.io/badge/at%20rest-AES--256--GCM%20encrypted-2ea043)
+![at rest](https://img.shields.io/badge/at%20rest-AES--256--GCM-2ea043)
 ![local-first](https://img.shields.io/badge/local--first-no%20cloud%20%C2%B7%20no%20keys-1f6feb)
 ![license](https://img.shields.io/badge/license-MIT-blue)
-![status](https://img.shields.io/badge/status-pre--release-orange)
+
+[mykeep.ai](https://mykeep.ai) · **Secured · Private · Portable**
 
 </div>
 
 ---
 
-mykeep is a **self-contained memory server for LLM agents** (Claude Code, Cursor, or anything
-with a shell/fetch tool). It stores what your agent learns, searches it semantically, and
-encrypts everything at rest — all on the stick, with **zero host dependencies and no CGo**, so
-one binary cross-compiles to Windows, macOS, and Linux. The agent does the reasoning; mykeep
-just remembers.
+Capsule is the **"knows you"** component of [mykeep](https://mykeep.ai): a self-contained memory
+server for LLM agents (Claude Code, Cursor, or anything with a shell or fetch tool). It stores
+what your agent learns, searches it semantically, and encrypts everything at rest — all on the
+drive, with **zero host dependencies and no CGo.** The agent does the reasoning; Capsule just
+remembers.
 
-> Think of it as a private, encrypted, USB-portable alternative to cloud "memory" features and
+> Think of it as a private, encrypted, portable alternative to cloud "memory" features and
 > heavyweight RAG stacks — without sending your data anywhere or running a database.
 
-## ✨ Features
+## Why it's different
 
-- 🔒 **Encrypted at rest** — the *entire* database (content, search index, and vectors) is one
-  AES-256-GCM blob, sealed with an argon2id key derived from your password. A lost stick yields
-  only ciphertext. There is no recovery by design.
-- 🧲 **Semantic + keyword + temporal recall** — local CPU embeddings (`bge-small` via
-  [cybertron](https://github.com/nlpodyssey/cybertron), vec0 KNN) + BM25 full-text + a date-aware
-  arm, fused with Reciprocal Rank Fusion and a recency boost.
-- 💻 **Runs anywhere, depends on nothing** — one static binary, no installer, no host services,
-  **no CGo**. Cross-compiles to win/mac/linux × amd64/arm64 from a single host.
-- 🪟 **Cross-platform GUI** — launches a local web app in your browser (no GUI toolkit, still one
-  binary). Or use the terminal, the REST API, or the CLI.
-- 🤖 **No LLM, no keys** — mykeep stores and retrieves; *your* agent does all the thinking. It
-  never calls out to the cloud and has no API key to leak.
-- 🧳 **Truly portable** — config and data live next to the binary on the stick, so moving the
-  stick carries your whole memory with it.
+- 🔒 **Encrypted at rest.** The *entire* database — content, search index, and vectors — is one
+  AES-256-GCM blob, sealed with an argon2id key from your password. A lost drive yields only
+  ciphertext. No recovery, by design.
+- 🧲 **Three-way recall.** Semantic (local `bge-small` embeddings, vec0 KNN) + keyword (BM25
+  full-text) + a date-aware temporal arm, fused with Reciprocal Rank Fusion and a recency boost.
+- 💻 **Depends on nothing.** One static binary — no installer, no host services, no CGo.
+  Cross-compiles to win/mac/linux × amd64/arm64 from a single host.
+- 🤖 **No LLM, no keys.** Capsule stores and retrieves; *your* agent does the thinking. Nothing
+  calls the cloud, and there's no API key to leak.
+- 🧳 **Truly portable.** Config and data live next to the binary on the drive, so moving the
+  drive carries your whole memory with it.
 
-## 🧩 How it works
+## How it works
 
 ```
- your AI agent  ──HTTP──▶  mykeep (local, loopback)  ──▶  encrypted SQLite on the USB stick
+ your AI agent  ──HTTP──▶  Capsule (local, loopback)  ──▶  encrypted SQLite on the USB drive
  (Claude Code,            retain / recall / search          AES-256-GCM · FTS5 · vec0 vectors
   Cursor, …)              local CPU embeddings               decrypted into RAM while unlocked
 ```
 
-The agent already *is* the LLM, so mykeep deliberately runs no model of its own (except the
-small local embedder used for search). You connect it by pasting a one-paragraph snippet into
-your assistant — no MCP server, no plugin, no config files.
+The agent already *is* the LLM, so Capsule runs no model of its own (beyond the small local
+embedder used for search). You connect it by pasting a one-paragraph snippet into your
+assistant — no MCP server, no plugin, no config files.
 
-## 🚀 Quick start
+## Quick start
 
 ```sh
 git clone https://github.com/lexxx233/mykeep-capsule.git && cd mykeep-capsule
 go build ./cmd/mykeep      # or: make build  ->  bin/mykeep
-./bin/mykeep               # opens the GUI in your browser (double-click on a stick)
+./bin/mykeep               # opens the GUI in your browser (double-click on a drive)
 ```
 
-On **first launch** you create a password; on every launch after, you're prompted for it (the DB
+On **first launch** you create a password; every launch after, you're prompted for it (the DB
 is decrypted into RAM, then served). Then paste this block — printed on launch, or via
 `mykeep snippet` — into your AI assistant:
 
@@ -83,34 +81,27 @@ Then follow them — remember facts about the user/project as you learn them, an
 recall before you answer. Use your shell or fetch tool to call the API.
 ```
 
-The agent fetches its full operating manual from `/v1/guide` (the retain / recall /
-reflect / supersede protocol), then just `curl`s the local API. That's the whole
-integration — no MCP, no plugin, no config. (For chat clients that can't fetch, the GUI's
-**"Copy full instructions"** button and `mykeep guide` print the manual inline.)
+The agent fetches its full operating manual from `/v1/guide` (the retain / recall / reflect /
+supersede protocol), then just `curl`s the local API. That's the whole integration. (For chat
+clients that can't fetch, the GUI's **"Copy full instructions"** button and `mykeep guide`
+print the manual inline.)
 
-## 🪝 Automatic capture (optional)
+## Automatic capture (optional)
 
 Relying on the agent to *remember* to save things is the one weak spot of "the agent does the
-reasoning." The fix keeps mykeep LLM-free but makes retention automatic: a host hook calls
-`mykeep capture` each turn to log the raw exchange as a low-tier, deduped `capture` memory (a
-safety net), and an auto-triggered nudge asks the agent to periodically **distill** those into
-curated `mental_model`s. Captures are hidden from normal recall (a substrate) until distilled, or
-via `recall {"include_captures": true}`.
+reasoning." The fix keeps Capsule LLM-free but makes retention automatic:
+
+- A host hook calls `mykeep capture` each turn to log the raw exchange as a low-tier, deduped
+  `capture` memory — a safety net.
+- An auto-triggered nudge asks the agent to periodically **distill** those into curated
+  `mental_model`s.
+- Captures stay hidden from normal recall until distilled (or via `recall {"include_captures": true}`).
 
 Drop-in recipes live in **[`integrations/`](integrations/)** — Claude Code `UserPromptSubmit` +
-`Stop` hooks, and a generic shell wrapper. They're non-fatal: if mykeep is stopped, capture is
+`Stop` hooks, and a generic shell wrapper. They're non-fatal: if Capsule is stopped, capture is
 silently skipped and the turn proceeds.
 
-## 🪟 The GUI
-
-Running mykeep with **no arguments** (double-clicking the drive launcher) opens a local web app
-in your default browser — served by mykeep itself, pure Go, no toolkit. It prompts for the
-password, unlocks the store, and shows a dashboard to copy the agent snippet, add a memory, and
-search.
-
-<!-- Add a screenshot here once captured: ![mykeep GUI](docs/screenshot.png) -->
-
-## 🛠 CLI
+## CLI
 
 ```sh
 mykeep                 # default: open the GUI
@@ -128,7 +119,7 @@ mykeep version
 
 Headless: set `MYKEEP_PASSPHRASE` (or pipe it on stdin) for `serve`.
 
-## 🔌 HTTP API (loopback only)
+## HTTP API (loopback only)
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -144,19 +135,19 @@ Headless: set `MYKEEP_PASSPHRASE` (or pipe it on stdin) for `serve`.
 Memories are organized into **banks** (e.g. one per project or user) and can carry **tags** for
 fine-grained recall filtering.
 
-## 🔐 Security
+## Security
 
-The whole database is encrypted at rest with **AES-256-GCM** under an **argon2id** password-derived
-key (KEK wrapping a random data key). No plaintext DB — or temp file — ever touches the stick; the
-live database lives only in RAM while unlocked. The API binds to loopback and validates the `Host`
-header. See **[SECURITY.md](SECURITY.md)** for the full threat model.
+The whole database is encrypted at rest with **AES-256-GCM** under an **argon2id**
+password-derived key (a KEK wrapping a random data key). No plaintext DB — or temp file — ever
+touches the drive; the live database lives only in RAM while unlocked. The API binds to loopback
+and validates the `Host` header. Full threat model in **[SECURITY.md](SECURITY.md)**.
 
-> ⚠️ Pre-release software. There is **no password recovery** — a forgotten password means the
-> memories are unrecoverable, by design.
+> ⚠️ **No password recovery.** A forgotten password means the memories are unrecoverable, by
+> design. This is early software — keep a backup of anything you can't lose.
 
-## 🧳 Running from a USB stick
+## Running from a USB drive
 
-`make dist` produces the drive layout you copy onto the stick — six platform binaries and three
+`make dist` produces the layout you copy onto the drive — six platform binaries and three
 launchers at the root, with all data kept separately in `mykeep_kb/`:
 
 ```
@@ -168,31 +159,31 @@ launchers at the root, with all data kept separately in `mykeep_kb/`:
 └── mykeep_kb/        ← all data: mykeep.db.enc, config, models/ (created on first launch)
 ```
 
-The code (regenerable binaries) is cleanly separated from your data (`mykeep_kb`, the encrypted
-knowledge base). Every binary resolves `mykeep_kb/` as a sibling of itself, so the same stick works
-on any OS. Tips:
+Regenerable binaries stay cleanly separated from your data (`mykeep_kb`). Every binary resolves
+`mykeep_kb/` as a sibling of itself, so the same drive works on any OS.
 
-- **Format the stick as exFAT** — the only format read/write on Windows, macOS, and Linux out of
+- **Format the drive as exFAT** — the only format read/write on Windows, macOS, and Linux out of
   the box.
 - **Safe-eject** before unplugging. Memories re-seal a few seconds after each write and on clean
   shutdown; a hard yank loses at most the last few seconds.
-- Launch via `mykeep.command` / `.cmd` / `.sh` (exFAT has no exec bit, so the launcher runs the raw
-  binary for you). Unsigned binaries: macOS `xattr -dr com.apple.quarantine <path>` or right-click →
-  Open; Windows SmartScreen → More info → Run anyway.
-- Only ever use one OS? Ship just that one `mykeep-<os>-<arch>` binary + its launcher (~16 MB vs
+- **Launch via the launcher** (`.command` / `.cmd` / `.sh`) — exFAT has no exec bit, so it runs
+  the raw binary for you. Unsigned binaries: macOS `xattr -dr com.apple.quarantine <path>` or
+  right-click → Open; Windows SmartScreen → More info → Run anyway.
+- **One OS only?** Ship just that one `mykeep-<os>-<arch>` binary + its launcher (~16 MB vs
   ~100 MB for all six).
 
-## 🗺 Roadmap
+## Where it fits
 
-Implemented and tested today: encrypted store (off-lock re-seal), local CPU embeddings, vec0 +
-brute-force vector search, keyword + semantic + temporal recall, **reflect** + the knowledge
-hierarchy, **auto-retain** (capture + distill), supersession + orphan pruning, migration framework,
-single-instance lock, the GUI, REST API, and CLI. Still planned: runtime settings changes
-(`PATCH /v1/settings`), extra key-in-RAM hardening (mlock, idle auto-lock), DEK rotation, and a
-capture rotation cap. See
-**[IMPLEMENTATION.md](IMPLEMENTATION.md)** for the full status.
+Capsule is one of four mykeep components — all on one drive, under one password:
 
-## 🧪 Development
+| | Component | Your agent can… |
+|---|---|---|
+| 🧠 | **Capsule** (this repo) | **know** you — encrypted, portable memory |
+| 🔐 | **[Vault](https://github.com/lexxx233/mykeep-vault)** | **act as** you — a secrets broker that acts by reference |
+| 🔮 | **[Showstone](https://github.com/lexxx233/mykeep-showstone)** | **see** the web — a contained browser it drives over REST |
+| 🧰 | **[Foundry](https://github.com/lexxx233/mykeep-foundry)** | **do** more — sandboxed tools + the backend they run on |
+
+## Development
 
 ```sh
 make build      # local binary
@@ -204,9 +195,10 @@ make dist       # assemble the USB drive layout (binaries + launchers)
 ```
 
 Run a single test: `go test ./internal/retrieval -run TestRRF -v`. Requires **Go 1.26+**. The
-whole stack is pure Go (no CGo), so it cross-compiles to win/mac/linux × amd64/arm64 from one host.
+whole stack is pure Go, so it cross-compiles to win/mac/linux × amd64/arm64 from one host. See
+**[IMPLEMENTATION.md](IMPLEMENTATION.md)** for done-vs-deferred status.
 
-## 📄 License
+## License
 
 [MIT](LICENSE) © 2026 Domu Inc.
 
